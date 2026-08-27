@@ -6,11 +6,11 @@ A comprehensive energy consumption prediction and analysis dashboard built for B
 
 ### 🎯 Core Functionality
 
-- **Parameter Input Form**: Configure prediction parameters including date ranges and data sources
+- **Parameter Input Form**: Configure prediction parameters including date ranges and data sources.
 - **Energy Consumption Predictions**: Interactive charts showing predicted vs actual energy consumption
 - **Weather Data Integration**: Real-time weather data visualization with temperature, humidity, wind speed, and precipitation
 - **Holiday & Session Tracking**: Display holiday schedules and in-session status for the university
-- **Responsive Design**: Mobile-friendly interface with Ball State University branding
+- **Responsive Design**: Mobile-friendly interface with Ball State University branding.
 
 ### 📊 Data Visualization
 
