@@ -43,9 +43,11 @@ export function OutlierZapPanel({
   const [expanded, setExpanded] = useState(false);
   const [debouncedZaps, setDebouncedZaps] = useState<string[]>([]);
 
-  const isOverage = selectedPlotType === "threshold-detection";
+  const isOverage =
+    selectedPlotType === "threshold-detection" ||
+    selectedPlotType === "rpca-analysis";
   const activeMeter = isOverage
-    ? form.outlierZapPreviewMeter || form.meter
+    ? form.outlierZapPreviewMeter || form.meter || form.includedMeters[0] || ""
     : form.meter;
 
   const previewMeterOptions = useMemo(() => {
@@ -243,7 +245,7 @@ export function OutlierZapPanel({
       name: "Raw series",
       type: "scatter",
       marker: { size: 4 },
-      line: { color: darkMode ? "#93c5fd" : "#003DA5", width: 1.5 },
+      line: { color: darkMode ? "#93c5fd" : "#0079A7", width: 1.5 },
     });
   }
   if (currentZaps.length && preview?.series.length) {
@@ -320,7 +322,7 @@ export function OutlierZapPanel({
           {storedEntry &&
             form.outlierZapMode === "none" &&
             countZaps(storedEntry.manual_outliers) > 0 && (
-              <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-blue-900 dark:text-blue-200 flex flex-wrap items-center justify-between gap-2">
+              <div className="rounded-lg border border-[#AEDBE9] dark:border-[#0079A7]/50 bg-[#AEDBE9]/25 dark:bg-[#0079A7]/20 px-3 py-2 text-sm text-[#005F80] dark:text-[#AEDBE9] flex flex-wrap items-center justify-between gap-2">
                 <span>
                   Use {countZaps(storedEntry.manual_outliers)} zap(s) from{" "}
                   {plotTypeLabel(storedEntry.savedFromTab)} (saved{" "}
@@ -329,7 +331,7 @@ export function OutlierZapPanel({
                 <button
                   type="button"
                   onClick={acceptStored}
-                  className="px-2 py-1 text-xs font-medium bg-[#003DA5] text-white rounded hover:bg-[#002d7a]"
+                  className="px-2 py-1 text-xs font-medium bg-[#0079A7] text-white rounded hover:bg-[#005F80]"
                 >
                   Use saved zaps
                 </button>
@@ -468,7 +470,7 @@ export function OutlierZapPanel({
                 <button
                   type="button"
                   onClick={handleSaveToStorage}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#003DA5] text-white rounded-md hover:bg-[#002d7a]"
+                  className="px-3 py-1.5 text-xs font-medium bg-[#0079A7] text-white rounded-md hover:bg-[#005F80]"
                 >
                   Save to storage
                 </button>

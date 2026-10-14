@@ -10,7 +10,7 @@ export function EdaOptionsSection({ form }: EdaOptionsSectionProps) {
 {/* EDA Route-Specific Options */}
           {form.selectedPlotType === "eda-plots" && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 space-y-4">
-              <p className="text-xs font-medium text-[#003DA5] dark:text-blue-400 uppercase tracking-wide">
+              <p className="text-xs font-medium text-[#0079A7] dark:text-[#AEDBE9] uppercase tracking-wide">
                 {form.edaRoute === "trend-tests" && "Trend Test Options"}
                 {form.edaRoute === "seasonality-tests" && "Seasonality Test Options"}
                 {form.edaRoute === "unit-root-tests" && "Unit Root Test Options"}

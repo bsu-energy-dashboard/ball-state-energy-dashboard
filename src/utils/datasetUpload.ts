@@ -8,11 +8,15 @@ import type {
 /** Cloud Run request body limit; use direct-to-GCS above this combined size. */
 export const MULTIPART_UPLOAD_MAX_BYTES = 32 * 1024 * 1024;
 
-export function shouldUseGcsUpload(
-  energyCsv: File,
-  holidayJson: File,
-): boolean {
-  return energyCsv.size + holidayJson.size >= MULTIPART_UPLOAD_MAX_BYTES;
+export type DatasetUploadFiles = {
+  energyCsv?: File | null;
+  holidayJson?: File | null;
+};
+
+export function shouldUseGcsUpload(files: DatasetUploadFiles): boolean {
+  const csvSize = files.energyCsv?.size ?? 0;
+  const jsonSize = files.holidayJson?.size ?? 0;
+  return csvSize + jsonSize >= MULTIPART_UPLOAD_MAX_BYTES;
 }
 
 export function uploadPhaseLabel(phase: DatasetUploadPhase | null): string {
@@ -42,13 +46,13 @@ export function extractApiErrorMessage(error: unknown): string {
 
 async function uploadMultipart(
   apiUrl: string,
-  files: { energyCsv: File; holidayJson: File },
+  files: DatasetUploadFiles,
   onPhase?: (phase: DatasetUploadPhase) => void,
 ): Promise<DatasetUploadResponse> {
   onPhase?.("multipart");
   const form = new FormData();
-  form.append("energy_csv", files.energyCsv);
-  form.append("holiday_json", files.holidayJson);
+  if (files.energyCsv) form.append("energy_csv", files.energyCsv);
+  if (files.holidayJson) form.append("holiday_json", files.holidayJson);
   const response = await axios.post<DatasetUploadResponse>(
     `${apiUrl}/dataset/upload`,
     form,
@@ -59,7 +63,7 @@ async function uploadMultipart(
 
 async function uploadViaGcs(
   apiUrl: string,
-  files: { energyCsv: File; holidayJson: File },
+  files: DatasetUploadFiles,
   onPhase?: (phase: DatasetUploadPhase) => void,
 ): Promise<DatasetUploadResponse> {
   onPhase?.("requesting-urls");
@@ -67,24 +71,28 @@ async function uploadViaGcs(
     `${apiUrl}/dataset/upload-urls`,
   );
 
-  onPhase?.("uploading-csv");
-  const csvRes = await fetch(urls.csv_upload_url, {
-    method: "PUT",
-    headers: { "Content-Type": "text/csv" },
-    body: files.energyCsv,
-  });
-  if (!csvRes.ok) {
-    throw new Error(`CSV upload to storage failed (${csvRes.status})`);
+  if (files.energyCsv) {
+    onPhase?.("uploading-csv");
+    const csvRes = await fetch(urls.csv_upload_url, {
+      method: "PUT",
+      headers: { "Content-Type": "text/csv" },
+      body: files.energyCsv,
+    });
+    if (!csvRes.ok) {
+      throw new Error(`CSV upload to storage failed (${csvRes.status})`);
+    }
   }
 
-  onPhase?.("uploading-holiday");
-  const jsonRes = await fetch(urls.holiday_upload_url, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: files.holidayJson,
-  });
-  if (!jsonRes.ok) {
-    throw new Error(`Holiday JSON upload to storage failed (${jsonRes.status})`);
+  if (files.holidayJson) {
+    onPhase?.("uploading-holiday");
+    const jsonRes = await fetch(urls.holiday_upload_url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: files.holidayJson,
+    });
+    if (!jsonRes.ok) {
+      throw new Error(`Holiday JSON upload to storage failed (${jsonRes.status})`);
+    }
   }
 
   onPhase?.("confirming");
@@ -96,10 +104,13 @@ async function uploadViaGcs(
 
 export async function uploadDatasetFiles(
   apiUrl: string,
-  files: { energyCsv: File; holidayJson: File },
+  files: DatasetUploadFiles,
   onPhase?: (phase: DatasetUploadPhase) => void,
 ): Promise<DatasetUploadResponse> {
-  if (shouldUseGcsUpload(files.energyCsv, files.holidayJson)) {
+  if (!files.energyCsv && !files.holidayJson) {
+    throw new Error("Select an energy CSV and/or holiday JSON file");
+  }
+  if (shouldUseGcsUpload(files)) {
     return uploadViaGcs(apiUrl, files, onPhase);
   }
   return uploadMultipart(apiUrl, files, onPhase);

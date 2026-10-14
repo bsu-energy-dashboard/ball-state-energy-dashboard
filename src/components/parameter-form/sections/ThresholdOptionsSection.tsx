@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from "lucide-react";
 import { MeterMultiSelect } from "../MeterMultiSelect";
 import type { ParameterFormBindings } from "../types";
 
@@ -6,42 +7,253 @@ interface ThresholdOptionsSectionProps {
 }
 
 export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) {
-  if (form.selectedPlotType !== "threshold-detection") return null;
+  const isCampusRpca = form.selectedPlotType === "rpca-analysis";
+  if (form.selectedPlotType !== "threshold-detection" && !isCampusRpca) {
+    return null;
+  }
 
-  const rpcaMeters = form.allMeters;
+  const sourceMeters = form.meterList?.meters ?? [];
   const groupNames = new Set(
     form.meterGroups
       .filter((group) => group.name && group.meters.length > 0)
       .map((group) => group.name),
   );
 
+  if (isCampusRpca) {
+    const addOverageWindow = () => {
+      form.setOverageWindows((windows) => [
+        ...windows,
+        {
+          id: `overage-${Date.now()}`,
+          start: "",
+          end: "",
+        },
+      ]);
+    };
+    const updateOverageWindow = (
+      id: string,
+      key: "start" | "end",
+      value: string,
+    ) => {
+      form.setOverageWindows((windows) =>
+        windows.map((window) =>
+          window.id === id ? { ...window, [key]: value } : window,
+        ),
+      );
+    };
+    const removeOverageWindow = (id: string) => {
+      form.setOverageWindows((windows) =>
+        windows.filter((window) => window.id !== id),
+      );
+    };
+
+    return (
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-[#0079A7] dark:text-[#AEDBE9]">
+            Campus RPCA setup
+          </p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            Select the campus total source meters and the threshold to mark
+            overage hours.
+          </p>
+        </div>
+
+        <MeterMultiSelect
+          label="Meters to sum into total energy"
+          hint="Choose the columns for this dataset"
+          options={sourceMeters}
+          selected={form.totalEnergyMeters}
+          onChange={form.setTotalEnergyMeters}
+          showBulkActions
+          emptyMessage="No source meters — upload dataset first"
+          maxHeightClass="max-h-56"
+        />
+
+        <div>
+          <label
+            htmlFor="rpcaThreshold"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Campus total threshold
+          </label>
+          <input
+            id="rpcaThreshold"
+            type="number"
+            min={0}
+            step="any"
+            value={form.threshold}
+            onChange={(e) => form.setThreshold(e.target.value)}
+            placeholder="22000"
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Overage windows
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Add one or more ranges to highlight on the RPCA plots.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addOverageWindow}
+              className="inline-flex items-center gap-2 rounded-md border border-[#0079A7]/30 px-3 py-2 text-sm font-medium text-[#0079A7] hover:bg-[#0079A7]/10 dark:border-[#AEDBE9]/40 dark:text-[#AEDBE9]"
+            >
+              <Plus className="h-4 w-4" />
+              Add window
+            </button>
+          </div>
+
+          {form.overageWindows.length === 0 ? (
+            <p className="rounded-md border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+              No overage windows yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {form.overageWindows.map((window, index) => (
+                <div
+                  key={window.id}
+                  className="grid grid-cols-1 gap-3 rounded-md border border-gray-200 p-3 dark:border-gray-600 md:grid-cols-[1fr_1fr_auto]"
+                >
+                  <div>
+                    <label
+                      htmlFor={`${window.id}-start`}
+                      className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                    >
+                      Window {index + 1} start
+                    </label>
+                    <input
+                      id={`${window.id}-start`}
+                      type="datetime-local"
+                      value={window.start}
+                      min={form.minDate}
+                      max={form.maxDate}
+                      onChange={(e) =>
+                        updateOverageWindow(window.id, "start", e.target.value)
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`${window.id}-end`}
+                      className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
+                    >
+                      End
+                    </label>
+                    <input
+                      id={`${window.id}-end`}
+                      type="datetime-local"
+                      value={window.end}
+                      min={form.minDate}
+                      max={form.maxDate}
+                      onChange={(e) =>
+                        updateOverageWindow(window.id, "end", e.target.value)
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeOverageWindow(window.id)}
+                    aria-label={`Remove overage window ${index + 1}`}
+                    className="inline-flex h-10 w-10 items-center justify-center self-end rounded-md border border-gray-300 text-gray-600 hover:border-[#ba0c2f] hover:text-[#ba0c2f] dark:border-gray-600 dark:text-gray-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 space-y-4">
-      <p className="text-xs font-medium text-[#003DA5] dark:text-blue-400 uppercase tracking-wide">
-        Threshold Detection Options
-      </p>
-
-      <div>
-        <label
-          htmlFor="thresholdMode"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Threshold Mode
-        </label>
-        <select
-          id="thresholdMode"
-          value={form.thresholdMode}
-          onChange={(e) =>
-            form.setThresholdMode(e.target.value as "rpca" | "fixed")
-          }
-          className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-        >
-          <option value="rpca">RPCA — auto-recommend threshold</option>
-          <option value="fixed">Fixed — use explicit threshold</option>
-        </select>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[#0079A7] dark:text-[#AEDBE9]">
+            {isCampusRpca ? "Campus RPCA setup" : "Threshold detection options"}
+          </p>
+          {isCampusRpca && (
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              Build the total energy series from this dataset, then run RPCA
+              against the selected decomposition meters.
+            </p>
+          )}
+        </div>
+        {isCampusRpca && (
+          <div className="rounded-md border border-[#0079A7]/20 bg-white px-3 py-2 text-xs text-gray-700 shadow-sm dark:border-[#AEDBE9]/30 dark:bg-gray-800 dark:text-gray-200">
+            Main meter: <strong>{form.totalEnergyName || "not set"}</strong>
+          </div>
+        )}
       </div>
 
-      {form.thresholdMode === "fixed" && (
+      {isCampusRpca && (
+        <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-800">
+          <div>
+            <label
+              htmlFor="totalEnergyName"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Total energy series name
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
+                Used as the RPCA target
+              </span>
+            </label>
+            <input
+              id="totalEnergyName"
+              type="text"
+              value={form.totalEnergyName}
+              onChange={(e) => form.setTotalEnergyName(e.target.value)}
+              placeholder="totalenergy"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+
+          <MeterMultiSelect
+            label="Meters to sum into total energy"
+            hint="Choose the columns for this dataset"
+            options={sourceMeters}
+            selected={form.totalEnergyMeters}
+            onChange={form.setTotalEnergyMeters}
+            showBulkActions
+            emptyMessage="No source meters — upload dataset first"
+            maxHeightClass="max-h-56"
+          />
+        </div>
+      )}
+
+      {!isCampusRpca && (
+        <div>
+          <label
+            htmlFor="thresholdMode"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Threshold Mode
+          </label>
+          <select
+            id="thresholdMode"
+            value={form.thresholdMode}
+            onChange={(e) =>
+              form.setThresholdMode(e.target.value as "rpca" | "fixed")
+            }
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            <option value="rpca">RPCA — auto-recommend threshold</option>
+            <option value="fixed">Fixed — use explicit threshold</option>
+          </select>
+        </div>
+      )}
+
+      {!isCampusRpca && form.thresholdMode === "fixed" && (
         <div>
           <label
             htmlFor="threshold"
@@ -106,7 +318,7 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
       <MeterMultiSelect
         label="RPCA Meters"
         hint="All included by default — uncheck to omit"
-        options={rpcaMeters}
+        options={form.allMeters}
         selected={form.includedMeters}
         onChange={form.setIncludedMeters}
         groupNames={groupNames}
@@ -115,7 +327,7 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
       <button
         type="button"
         onClick={() => form.setShowThresholdAdvanced((v) => !v)}
-        className="flex items-center gap-2 text-sm font-medium text-[#003DA5] dark:text-blue-400 hover:underline"
+        className="flex items-center gap-2 text-sm font-medium text-[#0079A7] dark:text-[#AEDBE9] hover:underline"
       >
         <svg
           className={`w-4 h-4 transition-transform ${form.showThresholdAdvanced ? "rotate-90" : ""}`}
@@ -180,7 +392,7 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
           <MeterMultiSelect
             label="Series Meters"
             hint="Extra meters on stacked series plot"
-            options={rpcaMeters}
+            options={form.allMeters}
             selected={form.seriesMeters}
             onChange={form.setSeriesMeters}
             groupNames={groupNames}
@@ -284,7 +496,7 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
             </label>
           </div>
 
-          {form.thresholdMode === "rpca" && (
+          {(isCampusRpca || form.thresholdMode === "rpca") && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -219,6 +219,30 @@ export function overageThresholdQueryKey(request: BaseRequest) {
   ] as const;
 }
 
+export function simpleRpcaQueryKey(request: BaseRequest) {
+  return [
+    "simple-rpca",
+    request.start_date,
+    request.end_date,
+    request.meter,
+    request.total_meters,
+    request.threshold,
+    request.overage_windows,
+    request.cleaning_method,
+    request.cleaning_window,
+    request.cleaning_n_sigma,
+    request.cleaning_interval_width,
+    request.cleaning_daily,
+    request.cleaning_weekly,
+    request.cleaning_imputem,
+    request.cleaning_max,
+    request.cleaning_min,
+    request.cleaning_order,
+    manualOutliersKeyPart(request),
+    request.outlierZapMode,
+  ] as const;
+}
+
 export function outlierPreviewQueryKey(request: OutlierPreviewRequest) {
   return [
     "outlier-preview",
@@ -257,6 +281,8 @@ export function analysisQueryKey(
       return temperatureAnalysisQueryKey(request);
     case "eda-plots":
       return request.eda_route ? edaPlotQueryKey(request) : null;
+    case "rpca-analysis":
+      return simpleRpcaQueryKey(request);
     case "threshold-detection":
       return overageThresholdQueryKey(request);
     default:

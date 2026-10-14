@@ -21,7 +21,7 @@ export const OVERAGE_CLEANING_METHOD_OPTIONS: {
 export function cleaningMethodOptionsForPlot(
   plotType: string,
 ): { value: CleaningMethod | ""; label: string }[] {
-  if (plotType === "threshold-detection") {
+  if (plotType === "threshold-detection" || plotType === "rpca-analysis") {
     return [...BASE_CLEANING_METHOD_OPTIONS, ...OVERAGE_CLEANING_METHOD_OPTIONS];
   }
   return BASE_CLEANING_METHOD_OPTIONS;

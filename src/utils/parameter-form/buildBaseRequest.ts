@@ -21,6 +21,10 @@ import {
   resolveYearlySeasonality,
 } from "./seasonalityResolvers";
 
+function isRpcaWorkflow(plotType: PlotType): boolean {
+  return plotType === "threshold-detection" || plotType === "rpca-analysis";
+}
+
 export type BuildResult =
   | { ok: true; params: BaseRequest }
   | { ok: false };
@@ -256,56 +260,96 @@ export function buildBaseRequest({
     }
   }
 
-  if (selectedPlotType === "threshold-detection") {
-    if (!state.meter) {
-      toast.error("Please select a main meter");
-      return { ok: false };
-    }
-    if (state.includedMeters.length === 0) {
-      toast.error("Select at least one meter for RPCA decomposition");
-      return { ok: false };
-    }
-    params.threshold_mode = state.thresholdMode;
-    params.meters = state.includedMeters;
-    if (state.thresholdMode === "fixed") {
+  if (isRpcaWorkflow(selectedPlotType)) {
+    const isCampusRpca = selectedPlotType === "rpca-analysis";
+    if (isCampusRpca) {
+      if (!state.meter) {
+        toast.error("Please select the meter to compare against RPCA");
+        return { ok: false };
+      }
+      if (state.totalEnergyMeters.length === 0) {
+        toast.error("Select at least one meter to build total energy");
+        return { ok: false };
+      }
       const thresholdVal = parseFloat(state.threshold);
       if (Number.isNaN(thresholdVal)) {
-        toast.error("Please enter a valid threshold for fixed mode");
+        toast.error("Please enter a valid campus total threshold");
         return { ok: false };
       }
       params.threshold = thresholdVal;
+      params.total_meters = state.totalEnergyMeters;
+      const completeWindows = [];
+      for (const window of state.overageWindows) {
+        if (!window.start && !window.end) continue;
+        if (!window.start || !window.end) {
+          toast.error("Each RPCA overage window needs both start and end");
+          return { ok: false };
+        }
+        if (new Date(window.start) > new Date(window.end)) {
+          toast.error("RPCA overage window start must be before end");
+          return { ok: false };
+        }
+        completeWindows.push({
+          start: window.start,
+          end: window.end,
+        });
+      }
+      if (completeWindows.length > 0) {
+        params.overage_windows = completeWindows;
+      }
+    } else {
+      if (!state.meter) {
+        toast.error("Please select a main meter");
+        return { ok: false };
+      }
+      if (state.includedMeters.length === 0) {
+        toast.error("Select at least one meter for RPCA decomposition");
+        return { ok: false };
+      }
+      params.threshold_mode = state.thresholdMode;
+      params.meters = state.includedMeters;
+      if (state.thresholdMode === "fixed") {
+        const thresholdVal = parseFloat(state.threshold);
+        if (Number.isNaN(thresholdVal)) {
+          toast.error("Please enter a valid threshold for fixed mode");
+          return { ok: false };
+        }
+        params.threshold = thresholdVal;
+      }
     }
-    if (state.analysisWindowStart) {
+    if (!isCampusRpca && state.analysisWindowStart) {
       params.analysis_window_start = sliceDateOnly(state.analysisWindowStart);
     }
-    if (state.analysisWindowEnd) {
+    if (!isCampusRpca && state.analysisWindowEnd) {
       params.analysis_window_end = sliceDateOnly(state.analysisWindowEnd);
     }
-    if (state.contributionWindowStart) {
+    if (!isCampusRpca && state.contributionWindowStart) {
       params.contribution_window_start = sliceDateOnly(
         state.contributionWindowStart,
       );
     }
-    if (state.contributionWindowEnd) {
+    if (!isCampusRpca && state.contributionWindowEnd) {
       params.contribution_window_end = sliceDateOnly(
         state.contributionWindowEnd,
       );
     }
-    if (state.plotWindowStart) {
+    if (!isCampusRpca && state.plotWindowStart) {
       params.plot_window_start = sliceDateOnly(state.plotWindowStart);
     }
-    if (state.plotWindowEnd) {
+    if (!isCampusRpca && state.plotWindowEnd) {
       params.plot_window_end = sliceDateOnly(state.plotWindowEnd);
     }
-    if (state.seriesMeters.length > 0) {
+    if (!isCampusRpca && state.seriesMeters.length > 0) {
       params.series_meters = state.seriesMeters;
     }
-    params.contributions_top_n = state.contributionsTopN;
-    params.event_contributions_top_n = state.eventContributionsTopN;
-    params.contributions_method = state.contributionsMethod;
-    params.heatmap_normalize = state.heatmapNormalize;
-    params.heatmap_top_n = state.heatmapTopN;
-    params.clean_all_meters = state.cleanAllMeters;
+    if (!isCampusRpca) {
+      params.contributions_top_n = state.contributionsTopN;
+      params.event_contributions_top_n = state.eventContributionsTopN;
+      params.contributions_method = state.contributionsMethod;
+      params.heatmap_normalize = state.heatmapNormalize;
+      params.heatmap_top_n = state.heatmapTopN;
+      params.clean_all_meters = state.cleanAllMeters;
+    }
     if (
       state.cleaningMethod === "Prophet" ||
       state.cleaningMethod === "Neural"
@@ -313,7 +357,7 @@ export function buildBaseRequest({
       params.cleaning_daily = state.cleaningDaily;
       params.cleaning_weekly = state.cleaningWeekly;
     }
-    if (state.thresholdMode === "rpca") {
+    if (!isCampusRpca && state.thresholdMode === "rpca") {
       params.n_thresholds = state.nThresholds;
       params.rpca_tol = state.rpcaTol;
       params.rpca_max_iter = state.rpcaMaxIter;
@@ -324,18 +368,31 @@ export function buildBaseRequest({
     }
   }
 
-  const selectedGroup = meterGroups.find(
-    (group) => group.name === state.meter && group.meters.length > 0,
-  );
-  if (selectedGroup) {
-    params.meters_to_add = { [selectedGroup.name]: selectedGroup.meters };
+  const derivedMetersToAdd: Record<string, string[]> = {};
+
+  const referencedMeters = new Set([
+    state.meter,
+    ...state.includedMeters,
+    ...state.seriesMeters,
+  ]);
+  for (const group of meterGroups) {
+    if (
+      group.name &&
+      group.meters.length > 0 &&
+      referencedMeters.has(group.name)
+    ) {
+      derivedMetersToAdd[group.name] = group.meters;
+    }
+  }
+  if (Object.keys(derivedMetersToAdd).length > 0) {
+    params.meters_to_add = derivedMetersToAdd;
   }
 
   if (state.outlierZapMode !== "none") {
     let zaps: Record<string, string[]> = { ...state.manualOutliers };
-    if (selectedPlotType === "threshold-detection" && datasetId) {
+    if (isRpcaWorkflow(selectedPlotType) && datasetId) {
       zaps = mergeManualOutliersForOverage(
-        state.meter,
+        params.meter,
         state.includedMeters,
         state.seriesMeters,
         datasetId,

@@ -11,6 +11,11 @@ interface EssentialParametersSectionProps {
 }
 
 export function EssentialParametersSection({ form }: EssentialParametersSectionProps) {
+  const meterOptions =
+    form.selectedPlotType === "rpca-analysis"
+      ? (form.meterList?.meters ?? [])
+      : form.allMeters;
+
   return (
     <>
 {/* Date Range with Presets */}
@@ -103,10 +108,14 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
               >
                 {form.selectedPlotType === "threshold-detection"
                   ? "Main Meter"
+                  : form.selectedPlotType === "rpca-analysis"
+                    ? "Comparison Meter"
                   : "Meter"}
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
                   {form.selectedPlotType === "threshold-detection"
                     ? "Main meter — column checked against threshold"
+                    : form.selectedPlotType === "rpca-analysis"
+                      ? "Meter shown against the RPCA low-rank baseline"
                     : "Select a meter or create a group below"}
                 </span>
               </label>
@@ -118,14 +127,15 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white transition-all"
               >
                 <option value="">
-                  {form.allMeters.length === 0
+                  {meterOptions.length === 0
                     ? "No meters — upload dataset first"
                     : "Select a meter…"}
                 </option>
-                {form.allMeters.map((meterOption) => (
+                {meterOptions.map((meterOption) => (
                   <option key={meterOption} value={meterOption}>
                     {meterOption}
-                    {form.meterGroups.some((g) => g.name === meterOption)
+                    {form.selectedPlotType !== "rpca-analysis" &&
+                    form.meterGroups.some((g) => g.name === meterOption)
                       ? " (Group)"
                       : ""}
                   </option>
@@ -144,12 +154,14 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 >
                   Data Cleaning Method
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                    {form.selectedPlotType === "threshold-detection"
+                    {form.selectedPlotType === "threshold-detection" ||
+                    form.selectedPlotType === "rpca-analysis"
                       ? "Polynomial recommended for multi-meter overage"
                       : "Optional: Remove outliers and anomalies"}
                   </span>
                 </label>
-                {form.selectedPlotType === "threshold-detection" && (
+                {(form.selectedPlotType === "threshold-detection" ||
+                  form.selectedPlotType === "rpca-analysis") && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                     Each method runs per meter. Prophet fits one model per meter
                     and is slow at scale.
@@ -172,7 +184,8 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                   )}
                 </select>
               </div>
-              {form.selectedPlotType === "threshold-detection" &&
+              {(form.selectedPlotType === "threshold-detection" ||
+                form.selectedPlotType === "rpca-analysis") &&
                 (form.cleaningMethod === "Prophet" ||
                   form.cleaningMethod === "Neural") && (
                   <div className="flex flex-wrap gap-6">

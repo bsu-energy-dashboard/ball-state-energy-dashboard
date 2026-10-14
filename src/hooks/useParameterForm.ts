@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
 import type { BaseRequest, PlotType, FormField, EdaRoute, OutlierZapMode } from "../types/api";
 import { PLOT_TYPES } from "../constants/plotTypes";
@@ -24,8 +24,17 @@ import {
   defaultContributionWindow,
   defaultPlotWindow,
 } from "../constants/thresholdDefaults";
+import {
+  KNOWN_DERIVED_METER_RECIPES,
+  recipeAvailable,
+} from "../constants/derivedMeterRecipes";
 import type { ParameterFormBindings } from "../components/parameter-form/types";
 import type { MeterListResponse } from "../types/api";
+import type { OverageWindow } from "../types/parameterForm";
+
+function isRpcaWorkflow(plotType: PlotType): boolean {
+  return plotType === "threshold-detection" || plotType === "rpca-analysis";
+}
 
 interface UseParameterFormOptions {
   resetSignal: number;
@@ -175,6 +184,9 @@ export function useParameterForm({
     THRESHOLD_MODE_DEFAULT,
   );
   const [threshold, setThreshold] = useState("");
+  const [totalEnergyName, setTotalEnergyName] = useState("totalenergy");
+  const [totalEnergyMeters, setTotalEnergyMeters] = useState<string[]>([]);
+  const [overageWindows, setOverageWindows] = useState<OverageWindow[]>([]);
   const [includedMeters, setIncludedMeters] = useState<string[]>([]);
   const [seriesMeters, setSeriesMeters] = useState<string[]>([]);
   const [analysisWindowStart, setAnalysisWindowStart] = useState<string>(
@@ -228,6 +240,8 @@ export function useParameterForm({
     {},
   );
   const [outlierZapPreviewMeter, setOutlierZapPreviewMeter] = useState("");
+  const lastAutoIncludedMetersKeyRef = useRef<string | null>(null);
+  const lastAutoTotalEnergyMetersKeyRef = useRef<string | null>(null);
   // Load meter groups from localStorage on mount
   useEffect(() => {
     const savedGroups = localStorage.getItem("meterGroups");
@@ -263,12 +277,17 @@ export function useParameterForm({
       .map((group) => group.name);
     return [...originalMeters, ...groupNames];
   }, [meterList?.meters, meterGroups]);
+  const allMetersKey = useMemo(() => allMeters.join("\u001f"), [allMeters]);
+  const rawMetersKey = useMemo(
+    () => (meterList?.meters ?? []).join("\u001f"),
+    [meterList?.meters],
+  );
 
   useEffect(() => {
     setStartDate("");
     setEndDate("");
     setMeter("");
-    if (selectedPlotType === "threshold-detection") {
+    if (isRpcaWorkflow(selectedPlotType)) {
       setCleaningMethod("Polynomial");
       setCleaningExtra({
         cleaning_window: 12,
@@ -363,11 +382,18 @@ export function useParameterForm({
     const resetContribution = defaultContributionWindow();
     const resetPlot = defaultPlotWindow();
     setThresholdMode(THRESHOLD_MODE_DEFAULT);
-    setThreshold("");
+    setThreshold(selectedPlotType === "rpca-analysis" ? "22000" : "");
+    setTotalEnergyName("totalenergy");
+    setTotalEnergyMeters([]);
+    setOverageWindows([]);
     const groupNames = meterGroups
       .filter((group) => group.name && group.meters.length > 0)
       .map((group) => group.name);
-    setIncludedMeters([...(meterList?.meters ?? []), ...groupNames]);
+    setIncludedMeters(
+      selectedPlotType === "rpca-analysis"
+        ? [...(meterList?.meters ?? [])]
+        : [...(meterList?.meters ?? []), ...groupNames],
+    );
     setSeriesMeters([]);
     setAnalysisWindowStart(resetAnalysis.start);
     setAnalysisWindowEnd(resetAnalysis.end);
@@ -642,20 +668,40 @@ export function useParameterForm({
       if (initialValues.smoothing_window !== undefined) setEdaSmoothingWindow(initialValues.smoothing_window);
     }
     if (initialValues.meters_to_add) {
-      const groups = Object.entries(initialValues.meters_to_add).map(
-        ([name, meterList], index) => ({
-          id: `group-${index}`,
-          name,
-          meters: meterList,
-        })
-      );
-      setMeterGroups(groups);
+      const totalEnergyEntry = Object.entries(initialValues.meters_to_add)[0];
+      if (selectedPlotType === "rpca-analysis" && totalEnergyEntry) {
+        const [name, meters] = totalEnergyEntry;
+        setTotalEnergyName(name);
+        setTotalEnergyMeters(meters);
+      }
+      if (selectedPlotType !== "rpca-analysis") {
+        const groups = Object.entries(initialValues.meters_to_add).map(
+          ([name, meterList], index) => ({
+            id: `group-${index}`,
+            name,
+            meters: meterList,
+          })
+        );
+        setMeterGroups(groups);
+      }
     }
     if (initialValues.threshold_mode) {
       setThresholdMode(initialValues.threshold_mode);
     }
     if (initialValues.threshold !== undefined) {
       setThreshold(String(initialValues.threshold));
+    }
+    if (initialValues.total_meters?.length) {
+      setTotalEnergyMeters(initialValues.total_meters);
+    }
+    if (initialValues.overage_windows?.length) {
+      setOverageWindows(
+        initialValues.overage_windows.map((window, index) => ({
+          id: `overage-${index}-${window.start}-${window.end}`,
+          start: window.start,
+          end: window.end,
+        })),
+      );
     }
     if (initialValues.meters?.length) {
       setIncludedMeters(initialValues.meters);
@@ -720,24 +766,57 @@ export function useParameterForm({
     if (initialValues.manual_outliers) {
       setManualOutliers(initialValues.manual_outliers);
     }
-  }, [initialValues]);
+  }, [initialValues, selectedPlotType]);
 
   useEffect(() => {
-    if (selectedPlotType !== "threshold-detection") return;
-    if (allMeters.length && includedMeters.length === 0) {
-      setIncludedMeters([...allMeters]);
+    if (!isRpcaWorkflow(selectedPlotType)) return;
+    const defaultMeters =
+      selectedPlotType === "rpca-analysis"
+        ? (meterList?.meters ?? [])
+        : allMeters;
+    const defaultMetersKey =
+      selectedPlotType === "rpca-analysis" ? rawMetersKey : allMetersKey;
+    if (
+      defaultMeters.length &&
+      includedMeters.length === 0 &&
+      lastAutoIncludedMetersKeyRef.current !== defaultMetersKey
+    ) {
+      setIncludedMeters([...defaultMeters]);
+      lastAutoIncludedMetersKeyRef.current = defaultMetersKey;
     }
-  }, [selectedPlotType, allMeters, includedMeters.length]);
+  }, [
+    selectedPlotType,
+    meterList?.meters,
+    allMeters,
+    rawMetersKey,
+    allMetersKey,
+    includedMeters.length,
+  ]);
 
   useEffect(() => {
-    if (selectedPlotType !== "threshold-detection") return;
+    if (selectedPlotType !== "rpca-analysis") return;
+    if (totalEnergyMeters.length > 0) return;
+    const recipe = KNOWN_DERIVED_METER_RECIPES.totalenergy;
+    const sourceMeters = meterList?.meters ?? [];
+    if (
+      recipe &&
+      recipeAvailable(recipe, sourceMeters) &&
+      lastAutoTotalEnergyMetersKeyRef.current !== rawMetersKey
+    ) {
+      setTotalEnergyMeters([...recipe]);
+      lastAutoTotalEnergyMetersKeyRef.current = rawMetersKey;
+    }
+  }, [selectedPlotType, meterList?.meters, rawMetersKey, totalEnergyMeters.length]);
+
+  useEffect(() => {
+    if (!isRpcaWorkflow(selectedPlotType)) return;
     if (meter && !outlierZapPreviewMeter) {
       setOutlierZapPreviewMeter(meter);
     }
   }, [selectedPlotType, meter, outlierZapPreviewMeter]);
 
   useEffect(() => {
-    if (selectedPlotType !== "threshold-detection") return;
+    if (!isRpcaWorkflow(selectedPlotType)) return;
     const windows = defaultAnalysisWindow(meterList?.time_range);
     setAnalysisWindowStart((prev) => prev || windows.start);
     setAnalysisWindowEnd((prev) => prev || windows.end);
@@ -946,6 +1025,9 @@ export function useParameterForm({
     edaSmoothingWindow,
     thresholdMode,
     threshold,
+    totalEnergyName,
+    totalEnergyMeters,
+    overageWindows,
     includedMeters,
     seriesMeters,
     analysisWindowStart,
@@ -1057,6 +1139,9 @@ export function useParameterForm({
     setEdaSmoothingWindow,
     setThresholdMode,
     setThreshold,
+    setTotalEnergyName,
+    setTotalEnergyMeters,
+    setOverageWindows,
     setIncludedMeters,
     setSeriesMeters,
     setAnalysisWindowStart,

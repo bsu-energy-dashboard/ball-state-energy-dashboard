@@ -99,7 +99,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ball-state-blue dark:border-blue-400"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0079A7] dark:border-[#AEDBE9]"></div>
           <span className="ml-3 text-lg text-gray-600 dark:text-gray-300">
             Loading time series data...
           </span>
@@ -223,7 +223,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Mean Consumption
           </h4>
-          <p className="text-2xl font-bold text-ball-state-blue dark:text-blue-400">
+          <p className="text-2xl font-bold text-[#0079A7] dark:text-[#AEDBE9]">
             {data.statistics.mean.toFixed(2)}
           </p>
         </div>
@@ -256,7 +256,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       {/* Data Quality Metrics */}
       {(data.count || data.zero_counts || data.missing_counts) && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Data Quality Metrics
           </h3>
           <div className="space-y-3">
@@ -302,7 +302,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {submitParams?.assessment && data.assessment && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Assessment Metrics
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -362,7 +362,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {submitParams?.assessment && data.assessment_plot_png_base64 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Assessment Plot
           </h3>
           <img
@@ -375,7 +375,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {submitParams?.assessment && assessmentComparisonData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Assessment Test Window: Actual vs Predicted
           </h3>
           <div className="h-full w-full">
@@ -406,7 +406,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                 <Line
                   type="monotone"
                   dataKey="predicted"
-                  stroke="#003DA5"
+                  stroke="#0079A7"
                   strokeWidth={2}
                   dot={false}
                   name="Predicted"
@@ -419,7 +419,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {/* Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-        <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+        <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
           Time Series Plot - {data.meter}
         </h3>
         <div className="h-full w-full">
@@ -470,7 +470,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
               <Line
                 type="monotone"
                 dataKey="smoothed"
-                stroke="#003DA5"
+                stroke="#0079A7"
                 strokeWidth={2}
                 dot={false}
                 name="Smoothed"
@@ -497,7 +497,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       {/* Outliers Table */}
       {outliers.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Detected Outliers ({outliers.length})
           </h3>
           <div className="max-h-80 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -533,7 +533,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         <span
                           className={
-                            deviation > 0 ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
+                            deviation > 0 ? "text-red-600 dark:text-red-400" : "text-[#0079A7] dark:text-[#AEDBE9]"
                           }
                         >
                           {deviation > 0 ? "+" : ""}
@@ -552,7 +552,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       {/* Holiday */}
       {data.holiday && data.holiday.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Holiday
           </h3>
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -590,7 +590,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {/* Date Range Info */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-        <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+        <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
           Date Range Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -623,7 +623,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
 
       {/* Statistics Details */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-        <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+        <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
           Statistical Summary
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
