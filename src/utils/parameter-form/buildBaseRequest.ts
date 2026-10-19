@@ -263,21 +263,14 @@ export function buildBaseRequest({
   if (isRpcaWorkflow(selectedPlotType)) {
     const isCampusRpca = selectedPlotType === "rpca-analysis";
     if (isCampusRpca) {
-      if (!state.meter) {
-        toast.error("Please select the meter to compare against RPCA");
-        return { ok: false };
-      }
-      if (state.totalEnergyMeters.length === 0) {
-        toast.error("Select at least one meter to build total energy");
-        return { ok: false };
-      }
       const thresholdVal = parseFloat(state.threshold);
       if (Number.isNaN(thresholdVal)) {
         toast.error("Please enter a valid campus total threshold");
         return { ok: false };
       }
       params.threshold = thresholdVal;
-      params.total_meters = state.totalEnergyMeters;
+      params.total_meters = state.totalEnergyMeters.length ? state.totalEnergyMeters : undefined;
+      params.cleaning_method = (state.cleaningMethod || "None") as CleaningMethod;
       const completeWindows = [];
       for (const window of state.overageWindows) {
         if (!window.start && !window.end) continue;

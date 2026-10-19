@@ -25,8 +25,7 @@ import {
   defaultPlotWindow,
 } from "../constants/thresholdDefaults";
 import {
-  KNOWN_DERIVED_METER_RECIPES,
-  recipeAvailable,
+  campusTotalPreset,
 } from "../constants/derivedMeterRecipes";
 import type { ParameterFormBindings } from "../components/parameter-form/types";
 import type { MeterListResponse } from "../types/api";
@@ -796,11 +795,10 @@ export function useParameterForm({
   useEffect(() => {
     if (selectedPlotType !== "rpca-analysis") return;
     if (totalEnergyMeters.length > 0) return;
-    const recipe = KNOWN_DERIVED_METER_RECIPES.totalenergy;
     const sourceMeters = meterList?.meters ?? [];
+    const recipe = campusTotalPreset(sourceMeters);
     if (
-      recipe &&
-      recipeAvailable(recipe, sourceMeters) &&
+      recipe.length > 0 &&
       lastAutoTotalEnergyMetersKeyRef.current !== rawMetersKey
     ) {
       setTotalEnergyMeters([...recipe]);

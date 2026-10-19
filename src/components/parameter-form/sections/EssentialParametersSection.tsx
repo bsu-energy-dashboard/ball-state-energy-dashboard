@@ -8,9 +8,10 @@ import type { ParameterFormBindings } from "../types";
 
 interface EssentialParametersSectionProps {
   form: ParameterFormBindings;
+  section?: "all" | "dates" | "options";
 }
 
-export function EssentialParametersSection({ form }: EssentialParametersSectionProps) {
+export function EssentialParametersSection({ form, section = "all" }: EssentialParametersSectionProps) {
   const meterOptions =
     form.selectedPlotType === "rpca-analysis"
       ? (form.meterList?.meters ?? [])
@@ -19,7 +20,7 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
   return (
     <>
 {/* Date Range with Presets */}
-          {form.shouldShowField("start_date") && form.shouldShowField("end_date") && (
+          {section !== "options" && form.shouldShowField("start_date") && form.shouldShowField("end_date") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Date Range
@@ -100,7 +101,7 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
           )}
 
           {/* Meter Selection */}
-          {form.shouldShowField("meter") && (
+          {section !== "dates" && form.shouldShowField("meter") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors">
               <label
                 htmlFor="meter"
@@ -123,13 +124,13 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
                 id="meter"
                 value={form.meter}
                 onChange={(e) => form.setMeter(e.target.value)}
-                required
+                required={form.selectedPlotType !== "rpca-analysis"}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white transition-all"
               >
                 <option value="">
                   {meterOptions.length === 0
                     ? "No meters — upload dataset first"
-                    : "Select a meter…"}
+                    : form.selectedPlotType === "rpca-analysis" ? "Automatic - meter with usable data" : "Select a meter…"}
                 </option>
                 {meterOptions.map((meterOption) => (
                   <option key={meterOption} value={meterOption}>
@@ -145,7 +146,7 @@ export function EssentialParametersSection({ form }: EssentialParametersSectionP
           )}
 
           {/* Cleaning Method */}
-          {form.shouldShowField("cleaning_method") && (
+          {section !== "dates" && form.shouldShowField("cleaning_method") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors space-y-4">
               <div>
                 <label
