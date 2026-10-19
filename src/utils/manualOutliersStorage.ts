@@ -113,6 +113,7 @@ export function plotTypeLabel(tab: PlotType): string {
     "temperature-analysis": "Temperature",
     "eda-plots": "EDA",
     "threshold-detection": "Threshold detection",
+    "rpca-analysis": "Campus RPCA",
   };
   return labels[tab] ?? tab;
 }

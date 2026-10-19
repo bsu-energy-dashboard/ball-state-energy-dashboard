@@ -1,9 +1,12 @@
+import { isAxiosError } from "axios";
 import { useOverageThreshold } from "../services/api";
 import type { BaseRequest } from "../types/api";
 import ManualOutliersAudit from "./ManualOutliersAudit";
 
 interface ThresholdDetectionPanelProps {
   submitParams: BaseRequest | null;
+  title?: string;
+  emptyMessage?: string;
 }
 
 function SummaryCard({
@@ -38,8 +41,43 @@ function PngPlot({ title, base64 }: { title: string; base64: string }) {
   );
 }
 
+function getErrorDetail(error: unknown): {
+  code?: string;
+  message: string;
+  hint?: string;
+} {
+  if (isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+      const structured = detail as {
+        code?: unknown;
+        message?: unknown;
+        hint?: unknown;
+      };
+      return {
+        code:
+          typeof structured.code === "string" ? structured.code : undefined,
+        message:
+          typeof structured.message === "string"
+            ? structured.message
+            : error.message,
+        hint:
+          typeof structured.hint === "string" ? structured.hint : undefined,
+      };
+    }
+    if (typeof detail === "string") {
+      return { message: detail };
+    }
+  }
+  return {
+    message: error instanceof Error ? error.message : "Analysis request failed",
+  };
+}
+
 export default function ThresholdDetectionPanel({
   submitParams,
+  title = "Threshold Detection",
+  emptyMessage = "Select parameters and click Generate Analysis to run threshold detection.",
 }: ThresholdDetectionPanelProps) {
   const { data, isLoading, isFetching, error } = useOverageThreshold(
     submitParams,
@@ -49,7 +87,7 @@ export default function ThresholdDetectionPanel({
   if (!submitParams) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
-        <div className="text-[#003DA5] dark:text-blue-400 mb-3">
+        <div className="text-[#0079A7] dark:text-[#AEDBE9] mb-3">
           <svg
             className="w-12 h-12 mx-auto opacity-40"
             fill="none"
@@ -65,8 +103,7 @@ export default function ThresholdDetectionPanel({
           </svg>
         </div>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Select parameters and click <strong>Generate Analysis</strong> to run
-          threshold detection.
+          {emptyMessage}
         </p>
       </div>
     );
@@ -76,7 +113,7 @@ export default function ThresholdDetectionPanel({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
         <svg
-          className="animate-spin h-8 w-8 text-[#003DA5] dark:text-blue-400 mx-auto mb-3"
+          className="animate-spin h-8 w-8 text-[#0079A7] dark:text-[#AEDBE9] mx-auto mb-3"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -102,6 +139,7 @@ export default function ThresholdDetectionPanel({
   }
 
   if (error) {
+    const errorDetail = getErrorDetail(error);
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex items-start gap-3 text-red-600 dark:text-red-400">
@@ -120,9 +158,19 @@ export default function ThresholdDetectionPanel({
           </svg>
           <div>
             <p className="font-semibold text-sm">Analysis failed</p>
+            {errorDetail.code && (
+              <p className="mt-1 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-200">
+                {errorDetail.code}
+              </p>
+            )}
             <p className="text-sm mt-1 text-red-500 dark:text-red-300">
-              {error.message}
+              {errorDetail.message}
             </p>
+            {errorDetail.hint && (
+              <p className="mt-2 text-xs text-red-500/90 dark:text-red-300/90">
+                {errorDetail.hint}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -136,9 +184,9 @@ export default function ThresholdDetectionPanel({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors space-y-8">
       <div className="flex items-center gap-2">
-        <div className="h-1 w-8 bg-[#003DA5] rounded" />
-        <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400">
-          Threshold Detection
+        <div className="h-1 w-8 bg-[#0079A7] rounded" />
+        <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">
+          {title}
         </h2>
         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
           {data.main_meter} · {data.threshold_mode} · threshold{" "}
@@ -225,9 +273,9 @@ export default function ThresholdDetectionPanel({
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
             Overage events
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                     Start
@@ -281,9 +329,9 @@ export default function ThresholdDetectionPanel({
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
             Contributions
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                     Meter
@@ -323,9 +371,9 @@ export default function ThresholdDetectionPanel({
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
             Event contributions
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                     Event
@@ -378,8 +426,8 @@ export default function ThresholdDetectionPanel({
         )}
       </div>
 
-      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <p className="text-xs text-blue-800 dark:text-blue-300">
+      <div className="p-3 bg-[#AEDBE9]/25 dark:bg-[#0079A7]/20 rounded-lg border border-[#AEDBE9] dark:border-[#0079A7]/50">
+        <p className="text-xs text-[#005F80] dark:text-[#AEDBE9]">
           <strong>Main meter:</strong> {data.main_meter}
           <span className="ml-3">
             <strong>Data range:</strong> {data.date_range.start} —{" "}

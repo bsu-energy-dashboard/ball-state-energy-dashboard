@@ -38,6 +38,13 @@ export const PLOT_TYPES: PlotTypeConfig[] = [
     fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },
   {
+    id: "rpca-analysis",
+    label: "Campus RPCA",
+    description: "Run Robust PCA on the campus total",
+    available: true,
+    fields: ["start_date", "end_date", "meter", "cleaning_method"],
+  },
+  {
     id: "threshold-detection",
     label: "Threshold Detection",
     description: "Overage threshold optimization and event analysis",

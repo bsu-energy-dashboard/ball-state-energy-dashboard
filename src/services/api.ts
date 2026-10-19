@@ -18,6 +18,7 @@ import type {
   ChatResponse,
   EdaResponse,
   OverageThresholdResponse,
+  SimpleRpcaResponse,
   OutlierPreviewRequest,
   OutlierPreviewResponse,
 } from "../types/api";
@@ -36,6 +37,7 @@ import {
   outlierPreviewQueryKey,
   overageThresholdQueryKey,
   seasonalAnalysisQueryKey,
+  simpleRpcaQueryKey,
   temperatureAnalysisQueryKey,
   timeSeriesQueryKey,
 } from "../utils/analysisQueryKeys";
@@ -293,8 +295,8 @@ export const useDatasetInfo = () => {
 };
 
 export interface DatasetUploadInput {
-  energyCsv: File;
-  holidayJson: File;
+  energyCsv?: File | null;
+  holidayJson?: File | null;
   onPhase?: (phase: DatasetUploadPhase) => void;
 }
 
@@ -605,6 +607,65 @@ export const useOverageThreshold = (
 
       const response = await axios.post<OverageThresholdResponse>(
         `${API_URL}/overage/threshold-optimization`,
+        body,
+      );
+      return response.data;
+    },
+    enabled: !!request && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 60 * 24,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useSimpleRpca = (
+  request: BaseRequest | null,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery({
+    queryKey: request ? simpleRpcaQueryKey(request) : ["simple-rpca", "disabled"],
+    queryFn: async () => {
+      if (!request) throw new Error("No request provided");
+
+      const body: Record<string, unknown> = {
+        start_date: request.start_date.slice(0, 10),
+        end_date: request.end_date.slice(0, 10),
+        meter: request.meter,
+        total_meters: request.total_meters ?? [],
+        threshold: request.threshold ?? 22000,
+      };
+
+      if (request.overage_windows?.length) {
+        body.overage_windows = request.overage_windows;
+      }
+      if (request.cleaning_method) body.cleaning_method = request.cleaning_method;
+      if (request.cleaning_window !== undefined) {
+        body.cleaning_window = request.cleaning_window;
+      }
+      if (request.cleaning_n_sigma !== undefined) {
+        body.cleaning_n_sigma = request.cleaning_n_sigma;
+      }
+      if (request.cleaning_interval_width !== undefined) {
+        body.cleaning_interval_width = request.cleaning_interval_width;
+      }
+      if (request.cleaning_daily !== undefined) {
+        body.cleaning_daily = request.cleaning_daily;
+      }
+      if (request.cleaning_weekly !== undefined) {
+        body.cleaning_weekly = request.cleaning_weekly;
+      }
+      if (request.cleaning_imputem !== undefined) {
+        body.cleaning_imputem = request.cleaning_imputem;
+      }
+      if (request.cleaning_max !== undefined) body.cleaning_max = request.cleaning_max;
+      if (request.cleaning_min !== undefined) body.cleaning_min = request.cleaning_min;
+      if (request.cleaning_order !== undefined) {
+        body.cleaning_order = request.cleaning_order;
+      }
+
+      appendManualOutliersToBody(body, request);
+
+      const response = await axios.post<SimpleRpcaResponse>(
+        `${API_URL}/rpca/simple`,
         body,
       );
       return response.data;

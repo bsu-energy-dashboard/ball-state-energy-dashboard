@@ -6,7 +6,7 @@ import type {
   PlotType,
 } from "../../types/api";
 import type { DatePreset } from "../../utils/parameter-form/applyDatePreset";
-import type { MeterGroup } from "../../types/parameterForm";
+import type { MeterGroup, OverageWindow } from "../../types/parameterForm";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 
@@ -126,6 +126,9 @@ export interface ParameterFormBindings extends ParameterFormState {
   setEdaSmoothingWindow: Setter<number>;
   setThresholdMode: Setter<"rpca" | "fixed">;
   setThreshold: Setter<string>;
+  setTotalEnergyName: Setter<string>;
+  setTotalEnergyMeters: Setter<string[]>;
+  setOverageWindows: Setter<OverageWindow[]>;
   setIncludedMeters: Setter<string[]>;
   setSeriesMeters: Setter<string[]>;
   setAnalysisWindowStart: Setter<string>;

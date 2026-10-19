@@ -286,7 +286,7 @@ function TrendTestRow({ label, result }: { label: string; result: EdaTrendTestRe
     result.trend === "increasing"
       ? "text-red-600 dark:text-red-400"
       : result.trend === "decreasing"
-      ? "text-blue-600 dark:text-blue-400"
+      ? "text-[#0079A7] dark:text-[#AEDBE9]"
       : "text-gray-600 dark:text-gray-400";
 
   return (
@@ -352,8 +352,8 @@ function EdaFooter({
   dateRange?: { start: string; end: string };
 }) {
   return (
-    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-      <p className="text-xs text-blue-800 dark:text-blue-300">
+    <div className="mt-4 p-3 bg-[#AEDBE9]/25 dark:bg-[#0079A7]/20 rounded-lg border border-[#AEDBE9] dark:border-[#0079A7]/50">
+      <p className="text-xs text-[#005F80] dark:text-[#AEDBE9]">
         <strong>Meter:</strong> {meter}
         {dateRange && (
           <span className="ml-3">
@@ -382,7 +382,7 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
   if (!submitParams) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
-        <div className="text-[#003DA5] dark:text-blue-400 mb-3">
+        <div className="text-[#0079A7] dark:text-[#AEDBE9] mb-3">
           <svg className="w-12 h-12 mx-auto opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
@@ -397,7 +397,7 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
   if (isLoading || isFetching) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
-        <svg className="animate-spin h-8 w-8 text-[#003DA5] dark:text-blue-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin h-8 w-8 text-[#0079A7] dark:text-[#AEDBE9] mx-auto mb-3" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
@@ -431,8 +431,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex items-center gap-2 mb-6">
-          <div className="h-1 w-8 bg-[#003DA5] rounded" />
-          <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400">
+          <div className="h-1 w-8 bg-[#0079A7] rounded" />
+          <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">
             {routeLabel}
           </h2>
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
@@ -481,8 +481,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex items-center gap-2 mb-6">
-          <div className="h-1 w-8 bg-[#003DA5] rounded" />
-          <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400">
+          <div className="h-1 w-8 bg-[#0079A7] rounded" />
+          <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">
             {routeLabel}
           </h2>
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
@@ -551,8 +551,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex items-center gap-2 mb-6">
-          <div className="h-1 w-8 bg-[#003DA5] rounded" />
-          <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400">{routeLabel}</h2>
+          <div className="h-1 w-8 bg-[#0079A7] rounded" />
+          <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">{routeLabel}</h2>
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
             {trend_tests.n_points.toLocaleString()} data points · {trend_tests.seasonal_periods} seasonal periods
           </span>
@@ -575,8 +575,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-1 w-8 bg-[#003DA5] rounded" />
-          <h2 className="text-xl font-semibold text-[#003DA5] dark:text-blue-400">{routeLabel}</h2>
+          <div className="h-1 w-8 bg-[#0079A7] rounded" />
+          <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">{routeLabel}</h2>
           {plotData.meter && (
             <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
               {plotData.meter}

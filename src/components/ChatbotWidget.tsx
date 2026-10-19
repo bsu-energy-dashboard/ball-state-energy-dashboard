@@ -3,10 +3,21 @@ import { AxiosError } from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
-import type { ChatMessage } from "../types/api";
+import type { ChatMessage, PlotType } from "../types/api";
 import { sendChatMessage } from "../services/api";
+import { getDashboardGuide } from "../utils/chatDashboardGuide";
+import type { DashboardFormPatch } from "../types/formAutomation";
+import {
+  createFormPatchFromChat,
+  describeFormPatch,
+} from "../utils/chatFormPatches";
 
 type UiMessage = ChatMessage & { id: string };
+
+interface ChatbotWidgetProps {
+  selectedPlotType: PlotType;
+  onApplyFormPatch?: (patch: DashboardFormPatch) => void;
+}
 
 /** Markdown tuned for assistant bubbles on a light/neutral background. */
 const assistantMarkdownComponents: Components = {
@@ -113,7 +124,9 @@ const assistantMarkdownComponents: Components = {
 const MAX_TEXTAREA_ROWS = 10;
 
 const SUGGESTED_PROMPTS = [
+  "How do I find overage hours?",
   "How many meters are in the dataset?",
+  "Set up Campus RPCA for the demo",
   "Were there campus overage events at 22,000 kW?",
   "Did Arts & Journalism cause the August overage?",
   "Is Foundational Science Building usage increasing?",
@@ -147,7 +160,10 @@ function TypingIndicator() {
   );
 }
 
-export default function ChatbotWidget() {
+export default function ChatbotWidget({
+  selectedPlotType,
+  onApplyFormPatch,
+}: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([
@@ -161,6 +177,8 @@ export default function ChatbotWidget() {
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [proposedPatch, setProposedPatch] =
+    useState<DashboardFormPatch | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -204,6 +222,39 @@ export default function ChatbotWidget() {
       role: "user",
       content: trimmed,
     };
+    const guide = getDashboardGuide(trimmed);
+    if (guide) {
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: crypto.randomUUID(), role: "assistant", content: guide },
+      ]);
+      setProposedPatch(null);
+      setInput("");
+      setError(null);
+      return;
+    }
+    const patch = onApplyFormPatch
+      ? createFormPatchFromChat(trimmed, selectedPlotType)
+      : null;
+
+    if (patch) {
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content:
+            "I can update the dashboard form for that. Review the settings card and apply it when you're ready.",
+        },
+      ]);
+      setProposedPatch(patch);
+      setInput("");
+      setError(null);
+      return;
+    }
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setError(null);
@@ -243,6 +294,21 @@ export default function ChatbotWidget() {
   const handleClose = () => {
     setIsOpen(false);
     setIsExpanded(false);
+  };
+
+  const handleApplyPatch = () => {
+    if (!proposedPatch || !onApplyFormPatch) return;
+    onApplyFormPatch(proposedPatch);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          "Applied those settings to the dashboard form. Check any dataset-specific meter choices before generating the analysis.",
+      },
+    ]);
+    setProposedPatch(null);
   };
 
   const panelWidth = isExpanded
@@ -392,6 +458,48 @@ export default function ChatbotWidget() {
 
               {isSending && <TypingIndicator />}
 
+              {proposedPatch && (
+                <div className="rounded-xl border border-[#0079A7]/25 bg-white p-3 shadow-sm dark:border-[#AEDBE9]/30 dark:bg-gray-800">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#0079A7] dark:text-[#AEDBE9]">
+                        Dashboard settings
+                      </p>
+                      <h4 className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                        {proposedPatch.summary}
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProposedPatch(null)}
+                      className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <ul className="mt-3 space-y-1.5 text-xs text-gray-700 dark:text-gray-200">
+                    {describeFormPatch(proposedPatch).map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0079A7] dark:bg-[#AEDBE9]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {proposedPatch.notes?.length ? (
+                    <div className="mt-3 rounded-lg bg-[#AEDBE9]/20 px-3 py-2 text-xs text-gray-700 dark:bg-[#0079A7]/20 dark:text-gray-200">
+                      {proposedPatch.notes[0]}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleApplyPatch}
+                    className="mt-3 w-full rounded-lg bg-[#0079A7] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#00668d]"
+                  >
+                    Apply settings
+                  </button>
+                </div>
+              )}
+
               {error && (
                 <div
                   role="alert"
@@ -442,7 +550,7 @@ export default function ChatbotWidget() {
         </div>
       )}
 
-      {(!isOpen || !isExpanded) && (
+      {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}

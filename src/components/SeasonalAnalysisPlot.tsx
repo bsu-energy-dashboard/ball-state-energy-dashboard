@@ -40,7 +40,7 @@ export default function SeasonalAnalysisPlot({
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ball-state-blue"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0079A7]"></div>
           <span className="ml-3 text-lg text-gray-600">
             Loading seasonal analysis data...
           </span>
@@ -119,7 +119,7 @@ export default function SeasonalAnalysisPlot({
       />
       {data.plot_png_base64 && (
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
             Seasonal Analysis Plot - {data.meter}
           </h3>
           <img
@@ -132,7 +132,7 @@ export default function SeasonalAnalysisPlot({
 
      {!data.plot_png_base64 && (
        <div className="bg-white rounded-lg shadow-md p-6">
-       <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
+       <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
          Seasonal Analysis - {data.meter}
        </h3>
        <div className="w-full overflow-x-auto">
@@ -308,7 +308,7 @@ export default function SeasonalAnalysisPlot({
 
       {/* Date Range Info */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-ball-state-blue mb-4">
+        <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
           Date Range Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

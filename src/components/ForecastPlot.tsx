@@ -219,7 +219,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
     <div className="space-y-6">
       {assessment && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Assessment Metrics
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -279,7 +279,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
 
       {assessmentPlotBase64 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Assessment Plot
           </h3>
           <img
@@ -297,7 +297,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
             <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
               Mean Consumption
             </h4>
-            <p className="text-2xl font-bold text-ball-state-blue dark:text-blue-400">
+            <p className="text-2xl font-bold text-[#0079A7] dark:text-[#AEDBE9]">
               {statistics.mean.toFixed(2)}
             </p>
           </div>
@@ -336,7 +336,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
               type="checkbox"
               checked={showBounds}
               onChange={(e) => setShowBounds(e.target.checked)}
-              className="h-4 w-4 text-ball-state-blue focus:ring-ball-state-blue border-gray-300 rounded"
+              className="h-4 w-4 text-[#0079A7] focus:ring-[#0079A7] border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">Show Confidence Bounds</span>
           </label>
@@ -345,7 +345,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
 
       {/* Main Chart - Historical + Forecast */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-        <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+        <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
           Historical Data + Forecast - {meterName}
         </h3>
         <div ref={plotRef} className="w-full" style={{ height: "600px" }}>
@@ -406,7 +406,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
               x: forecastDates,
               y: forecastTrend,
               mode: "lines",
-              line: { color: "#003DA5", width: 2, dash: "dot" },
+              line: { color: "#0079A7", width: 2, dash: "dot" },
               name: "Trend",
               type: "scatter",
             });
@@ -587,7 +587,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
       {/* Date Range Info */}
       {dateRange && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Date Range Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -622,7 +622,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
       {/* Statistics Details */}
       {statistics && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-          <h3 className="text-xl font-semibold text-ball-state-blue dark:text-blue-400 mb-4">
+          <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
             Statistical Summary
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

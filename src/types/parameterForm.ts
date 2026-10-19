@@ -11,6 +11,12 @@ export interface MeterGroup {
   meters: string[];
 }
 
+export interface OverageWindow {
+  id: string;
+  start: string;
+  end: string;
+}
+
 export interface ParameterFormState {
   startDate: string;
   endDate: string;
@@ -93,6 +99,9 @@ export interface ParameterFormState {
   edaSmoothingWindow: number;
   thresholdMode: "rpca" | "fixed";
   threshold: string;
+  totalEnergyName: string;
+  totalEnergyMeters: string[];
+  overageWindows: OverageWindow[];
   includedMeters: string[];
   seriesMeters: string[];
   analysisWindowStart: string;
@@ -117,4 +126,3 @@ export interface ParameterFormState {
   manualOutliers: Record<string, string[]>;
   outlierZapPreviewMeter: string;
 }
-

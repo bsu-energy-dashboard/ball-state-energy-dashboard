@@ -246,6 +246,10 @@ export interface BaseRequest {
   threshold?: number;
   /** RPCA decomposition columns (included meters). */
   meters?: string[];
+  /** Simple Campus RPCA total source columns. */
+  total_meters?: string[];
+  /** Simple Campus RPCA overage ranges highlighted on plots. */
+  overage_windows?: { start: string; end: string }[];
   analysis_window_start?: string;
   analysis_window_end?: string;
   contribution_window_start?: string;
@@ -606,6 +610,34 @@ export interface OverageThresholdResponse {
   manual_outliers_skipped?: ManualOutlierSkipped[];
 }
 
+export interface SimpleRpcaSummary {
+  data_hours: number;
+  data_meters: number;
+  data_start: string;
+  data_end: string;
+  meter: string;
+  threshold: number;
+  total_source_meter_count: number;
+  overage_hours: number;
+  overage_window_count: number;
+  converged: boolean;
+  iterations: number;
+  final_delta: number;
+}
+
+export interface SimpleRpcaResponse {
+  success: boolean;
+  meter: string;
+  threshold: number;
+  date_range: { start: string; end: string };
+  total_meters: string[];
+  overage_windows: { start: string; end: string }[];
+  summary: SimpleRpcaSummary;
+  heatmap_plot_png_base64: string;
+  series_plot_png_base64: string;
+  overage_plot_png_base64: string;
+}
+
 // Plot Types
 export type PlotType =
   | "time-series"
@@ -613,6 +645,7 @@ export type PlotType =
   | "seasonal-analysis"
   | "temperature-analysis"
   | "eda-plots"
+  | "rpca-analysis"
   | "threshold-detection";
 
 export type FormField =

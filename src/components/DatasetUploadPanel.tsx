@@ -28,6 +28,7 @@ export default function DatasetUploadPanel() {
   const [expanded, setExpanded] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [confirmPartial, setConfirmPartial] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,12 +40,18 @@ export default function DatasetUploadPanel() {
   );
   const upload = useDatasetUpload();
 
-  const usesGcs =
-    csvFile && jsonFile ? shouldUseGcsUpload(csvFile, jsonFile) : false;
+  const hasAnyFile = Boolean(csvFile || jsonFile);
+  const isPartialUpload = Boolean(
+    (csvFile && !jsonFile) || (!csvFile && jsonFile),
+  );
+  const usesGcs = hasAnyFile
+    ? shouldUseGcsUpload({ energyCsv: csvFile, holidayJson: jsonFile })
+    : false;
 
   const handleCsvChange = (file: File | null) => {
     if (!file) {
       setCsvFile(null);
+      setConfirmPartial(false);
       return;
     }
     if (!file.name.toLowerCase().endsWith(".csv")) {
@@ -56,11 +63,13 @@ export default function DatasetUploadPanel() {
       return;
     }
     setCsvFile(file);
+    setConfirmPartial(false);
   };
 
   const handleJsonChange = (file: File | null) => {
     if (!file) {
       setJsonFile(null);
+      setConfirmPartial(false);
       return;
     }
     if (!file.name.toLowerCase().endsWith(".json")) {
@@ -68,11 +77,18 @@ export default function DatasetUploadPanel() {
       return;
     }
     setJsonFile(file);
+    setConfirmPartial(false);
   };
 
   const handleUpload = async () => {
-    if (!csvFile || !jsonFile) {
-      toast.error("Select both the energy CSV and holiday JSON files");
+    if (!csvFile && !jsonFile) {
+      toast.error("Select an energy CSV and/or holiday JSON file");
+      return;
+    }
+    if (isPartialUpload && !confirmPartial) {
+      toast.error(
+        "Confirm that you do not need to update the other file before uploading",
+      );
       return;
     }
     setUploadPhase(null);
@@ -85,6 +101,7 @@ export default function DatasetUploadPanel() {
       toast.success(result.message ?? "Dataset uploaded successfully");
       setCsvFile(null);
       setJsonFile(null);
+      setConfirmPartial(false);
       if (csvInputRef.current) csvInputRef.current.value = "";
       if (jsonInputRef.current) jsonInputRef.current.value = "";
     } catch (err) {
@@ -93,6 +110,9 @@ export default function DatasetUploadPanel() {
       setUploadPhase(null);
     }
   };
+
+  const canUpload =
+    hasAnyFile && !upload.isPending && (!isPartialUpload || confirmPartial);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 transition-colors border border-gray-200 dark:border-gray-700">
@@ -104,7 +124,7 @@ export default function DatasetUploadPanel() {
         <div className="flex items-center gap-3">
           <div className="h-1 w-8 bg-[#ba0c2f] rounded" />
           <div>
-            <h2 className="text-lg font-semibold text-[#ba0c2f] dark:text-blue-400">
+            <h2 className="text-lg font-semibold text-[#ba0c2f] dark:text-[#AEDBE9]">
               Dataset
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -116,8 +136,8 @@ export default function DatasetUploadPanel() {
                       datasetInfo!.time_range?.end,
                     )}`
                   : isFetched
-                    ? "No dataset loaded — upload CSV + JSON"
-                    : "Upload energy CSV + holiday JSON"}
+                    ? "No dataset loaded — upload CSV and/or JSON"
+                    : "Upload energy CSV and/or holiday JSON"}
             </p>
           </div>
         </div>
@@ -142,6 +162,7 @@ export default function DatasetUploadPanel() {
             <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200">
               Default CSV not found. Upload <strong>All_AptMeters.csv</strong> and{" "}
               <strong>HOLIDAYDICT.json</strong> to enable meters and analysis.
+              A first-time load typically needs both files.
             </div>
           )}
 
@@ -176,22 +197,11 @@ export default function DatasetUploadPanel() {
           )}
 
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Upload replaces the single active dataset used by all analytics
-            endpoints. Both files are required. Files under{" "}
+            Upload replaces the active dataset used by all analytics endpoints.
+            You can upload the energy CSV, holiday JSON, or both. Files under{" "}
             {formatBytes(MULTIPART_UPLOAD_MAX_BYTES)} total use direct upload;
             larger files upload to cloud storage first (recommended on Cloud Run).
           </p>
-
-          {csvFile && jsonFile && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Upload method:{" "}
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                {usesGcs
-                  ? "GCS signed URLs → confirm"
-                  : "Multipart POST /dataset/upload"}
-              </span>
-            </p>
-          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -212,7 +222,7 @@ export default function DatasetUploadPanel() {
                 onChange={(e) =>
                   handleCsvChange(e.target.files?.[0] ?? null)
                 }
-                className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#ba0c2f] file:text-white hover:file:bg-[#002d7a]"
+                className="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#ba0c2f] file:text-white hover:file:bg-[#005F80]"
               />
               {csvFile && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -255,15 +265,110 @@ export default function DatasetUploadPanel() {
             </div>
           </div>
 
+          {hasAnyFile && (
+            <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Upload preview
+                </h3>
+                <p className="text-xs text-blue-800/80 dark:text-blue-200/80 mt-0.5">
+                  Review what this upload will do before continuing.
+                </p>
+              </div>
+
+              <ul className="text-sm text-blue-900 dark:text-blue-100 space-y-1.5 list-disc pl-5">
+                {csvFile ? (
+                  <li>
+                    Replace the <strong>energy CSV</strong> with{" "}
+                    <code className="text-xs">{csvFile.name}</code> (
+                    {formatBytes(csvFile.size)})
+                  </li>
+                ) : (
+                  <li>
+                    Keep the current <strong>energy CSV</strong> unchanged
+                    {hasDataset ? "" : " (none loaded yet)"}
+                  </li>
+                )}
+                {jsonFile ? (
+                  <li>
+                    Replace the <strong>holiday JSON</strong> with{" "}
+                    <code className="text-xs">{jsonFile.name}</code> (
+                    {formatBytes(jsonFile.size)})
+                  </li>
+                ) : (
+                  <li>
+                    Keep the current <strong>holiday JSON</strong> unchanged
+                    {hasDataset ? "" : " (none loaded yet)"}
+                  </li>
+                )}
+                <li>
+                  Upload method:{" "}
+                  <strong>
+                    {usesGcs
+                      ? "GCS signed URLs → confirm"
+                      : "Multipart POST /dataset/upload"}
+                  </strong>
+                </li>
+                {hasDataset ? (
+                  <li>
+                    Active analytics dataset will be updated after a successful
+                    upload.
+                  </li>
+                ) : (
+                  <li>
+                    This will become the active dataset for meters and analysis.
+                    {!csvFile || !jsonFile
+                      ? " A first-time load usually needs both files."
+                      : ""}
+                  </li>
+                )}
+              </ul>
+
+              {isPartialUpload && (
+                <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3 space-y-2">
+                  <p className="text-sm text-amber-900 dark:text-amber-100">
+                    {csvFile && !jsonFile
+                      ? "You're only uploading the energy CSV. Do you also need to update the holiday JSON?"
+                      : "You're only uploading the holiday JSON. Do you also need to update the energy CSV?"}
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    {csvFile && !jsonFile
+                      ? "If holiday dates changed, add HOLIDAYDICT.json above. Otherwise confirm below to continue with CSV only."
+                      : "If meter data changed, add the energy CSV above. Otherwise confirm below to continue with holiday JSON only."}
+                  </p>
+                  <label className="flex items-start gap-2 text-sm text-amber-950 dark:text-amber-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={confirmPartial}
+                      onChange={(e) => setConfirmPartial(e.target.checked)}
+                      className="mt-0.5 rounded border-amber-400 text-[#ba0c2f] focus:ring-[#ba0c2f]"
+                    />
+                    <span>
+                      {csvFile && !jsonFile
+                        ? "Continue without updating the holiday JSON"
+                        : "Continue without updating the energy CSV"}
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleUpload}
-            disabled={!csvFile || !jsonFile || upload.isPending}
+            disabled={!canUpload}
             className="px-5 py-2.5 text-sm font-semibold bg-[#ba0c2f] text-white rounded-lg hover:bg-[#9a0a26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {upload.isPending
               ? uploadPhaseLabel(uploadPhase)
-              : "Upload dataset"}
+              : csvFile && jsonFile
+                ? "Upload dataset"
+                : csvFile
+                  ? "Upload energy CSV"
+                  : jsonFile
+                    ? "Upload holiday JSON"
+                    : "Upload dataset"}
           </button>
         </div>
       )}
