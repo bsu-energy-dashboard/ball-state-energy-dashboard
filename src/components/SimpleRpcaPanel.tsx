@@ -45,6 +45,13 @@ function getErrorDetail(error: unknown): {
 } {
   if (isAxiosError(error)) {
     const detail = error.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return {
+        message: detail.map((issue: { loc?: (string | number)[]; msg?: string }) =>
+          `${issue.loc?.filter((part) => part !== "body").join(".") || "Request"}: ${issue.msg || "Invalid value"}`,
+        ).join("; "),
+      };
+    }
     if (detail && typeof detail === "object" && !Array.isArray(detail)) {
       const structured = detail as {
         code?: unknown;
@@ -82,8 +89,7 @@ export default function SimpleRpcaPanel({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Choose a date range, comparison meter, total-energy meters, and click
-          Generate Analysis.
+          No Campus RPCA result yet.
         </p>
       </div>
     );
@@ -157,12 +163,25 @@ export default function SimpleRpcaPanel({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <SummaryCard label="Rows" value={data.summary.data_hours} />
           <SummaryCard label="Meters" value={data.summary.data_meters} />
-          <SummaryCard label="Overage Hours" value={data.summary.overage_hours} />
+          <SummaryCard label="Overage Hours" value={data.summary.overage_hours ?? "No data"} />
           <SummaryCard
             label="Highlighted Windows"
             value={data.summary.overage_window_count}
           />
         </div>
+        {data.warnings?.map((warning) => (
+          <p key={warning} role="status" className="mt-3 text-sm text-gray-700 dark:text-gray-200">{warning}</p>
+        ))}
+        <details className="mt-4 border-t border-gray-200 pt-3 text-sm dark:border-gray-600">
+          <summary className="cursor-pointer font-medium">Data coverage and model</summary>
+          <div className="mt-3 space-y-2 break-words">
+            <p>Campus total: {data.summary.valid_total_hours} complete hours; {data.summary.missing_total_hours} missing hours.</p>
+            <p>Missing values filled in the RPCA matrix: {data.summary.imputed_value_count}. Campus totals use original readings.</p>
+            <p>Sources: {data.total_meters.join(", ")}</p>
+            <p>Excluded empty meters: {data.summary.excluded_empty_meters?.join(", ") || "None"}</p>
+            <p>{data.summary.converged ? "Converged" : "Iteration limit reached"} after {data.summary.iterations} iterations.</p>
+          </div>
+        </details>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-8 transition-colors">

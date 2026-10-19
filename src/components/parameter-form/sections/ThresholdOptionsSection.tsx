@@ -54,8 +54,7 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
             Campus RPCA setup
           </p>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            Select the campus total source meters and the threshold to mark
-            overage hours.
+            {form.totalEnergyMeters.length ? `${form.totalEnergyMeters.length} campus total source meters selected.` : "Campus preset (Bethel 177/187 and Christy Woods 47/97/117)."}
           </p>
         </div>
 

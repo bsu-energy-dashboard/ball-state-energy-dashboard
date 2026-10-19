@@ -398,8 +398,7 @@ export default function ParameterForm({
           <EdaRouteSelector form={form} />
         )}
 
-        {(selectedPlotType === "threshold-detection" ||
-          selectedPlotType === "rpca-analysis") && (
+        {selectedPlotType === "threshold-detection" && (
           <ThresholdOptionsSection form={form} />
         )}
 
@@ -411,18 +410,36 @@ export default function ParameterForm({
             </h3>
           </div>
 
-          <EssentialParametersSection form={form} />
+          {selectedPlotType === "rpca-analysis" ? (
+            <>
+              <EssentialParametersSection form={form} section="dates" />
+              <details className="border-t border-gray-200 pt-4 dark:border-gray-600">
+                <summary className="cursor-pointer text-sm font-semibold text-gray-800 dark:text-gray-200">Advanced</summary>
+                <div className="mt-4 space-y-4">
+                  <EssentialParametersSection form={form} section="options" />
+                  <ThresholdOptionsSection form={form} />
+                  <OutlierZapPanel form={form} selectedPlotType={selectedPlotType} datasetId={datasetId} />
+                </div>
+              </details>
+            </>
+          ) : <EssentialParametersSection form={form} />}
+          {selectedPlotType !== "rpca-analysis" && (
           <OutlierZapPanel
             form={form}
             selectedPlotType={selectedPlotType}
             datasetId={datasetId}
           />
+          )}
           <EdaOptionsSection form={form} />
           <ForecastOptionsSection form={form} />
         </div>
 
-        <SmoothingOptionsSection form={form} />
-        <MeterGroupsSection form={form} />
+        {selectedPlotType !== "rpca-analysis" && (
+          <>
+            <SmoothingOptionsSection form={form} />
+            <MeterGroupsSection form={form} />
+          </>
+        )}
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
@@ -454,7 +471,7 @@ export default function ParameterForm({
                 Generating Analysis...
               </span>
             ) : (
-              "Generate Analysis"
+              selectedPlotType === "rpca-analysis" ? "Generate" : "Generate Analysis"
             )}
           </button>
         </div>

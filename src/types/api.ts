@@ -618,7 +618,11 @@ export interface SimpleRpcaSummary {
   meter: string;
   threshold: number;
   total_source_meter_count: number;
-  overage_hours: number;
+  overage_hours: number | null;
+  valid_total_hours: number;
+  missing_total_hours: number;
+  excluded_empty_meters: string[];
+  imputed_value_count: number;
   overage_window_count: number;
   converged: boolean;
   iterations: number;
@@ -626,6 +630,7 @@ export interface SimpleRpcaSummary {
 }
 
 export interface SimpleRpcaResponse {
+  warnings?: string[];
   success: boolean;
   meter: string;
   threshold: number;

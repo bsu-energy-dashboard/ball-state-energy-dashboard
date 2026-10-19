@@ -627,10 +627,10 @@ export const useSimpleRpca = (
       if (!request) throw new Error("No request provided");
 
       const body: Record<string, unknown> = {
-        start_date: request.start_date.slice(0, 10),
-        end_date: request.end_date.slice(0, 10),
-        meter: request.meter,
-        total_meters: request.total_meters ?? [],
+        start_date: request.start_date,
+        end_date: request.end_date,
+        meter: request.meter || undefined,
+        total_meters: request.total_meters?.length ? request.total_meters : undefined,
         threshold: request.threshold ?? 22000,
       };
 
