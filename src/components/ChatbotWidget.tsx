@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import type { ChatMessage, PlotType } from "../types/api";
 import { sendChatMessage } from "../services/api";
+import { getDashboardGuide } from "../utils/chatDashboardGuide";
 import type { DashboardFormPatch } from "../types/formAutomation";
 import {
   createFormPatchFromChat,
@@ -123,6 +124,7 @@ const assistantMarkdownComponents: Components = {
 const MAX_TEXTAREA_ROWS = 10;
 
 const SUGGESTED_PROMPTS = [
+  "How do I find overage hours?",
   "How many meters are in the dataset?",
   "Set up Campus RPCA for the demo",
   "Were there campus overage events at 22,000 kW?",
@@ -220,6 +222,18 @@ export default function ChatbotWidget({
       role: "user",
       content: trimmed,
     };
+    const guide = getDashboardGuide(trimmed);
+    if (guide) {
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: crypto.randomUUID(), role: "assistant", content: guide },
+      ]);
+      setProposedPatch(null);
+      setInput("");
+      setError(null);
+      return;
+    }
     const patch = onApplyFormPatch
       ? createFormPatchFromChat(trimmed, selectedPlotType)
       : null;
@@ -536,7 +550,7 @@ export default function ChatbotWidget({
         </div>
       )}
 
-      {(!isOpen || !isExpanded) && (
+      {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
