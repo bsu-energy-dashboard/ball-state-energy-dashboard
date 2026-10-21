@@ -699,6 +699,18 @@ export interface DatasetUploadUrlsResponse {
   holiday_upload_url: string;
 }
 
+export interface DatasetDownloadUrlsResponse {
+  success: boolean;
+  mode: "signed" | "stream";
+  bucket?: string | null;
+  csv_download_url: string;
+  holiday_download_url: string;
+  csv_filename: string;
+  holiday_filename: string;
+  expires_in_seconds: number | null;
+  instructions?: string;
+}
+
 export interface DatasetUploadResponse {
   success: boolean;
   message?: string;

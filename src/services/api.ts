@@ -12,6 +12,7 @@ import type {
   TemperatureAnalysisResponse,
   MeterListResponse,
   DatasetInfoResponse,
+  DatasetDownloadUrlsResponse,
   DatasetUploadResponse,
   ForecastResponse,
   ChatRequest,
@@ -308,6 +309,20 @@ export async function uploadDataset(
     { energyCsv: input.energyCsv, holidayJson: input.holidayJson },
     input.onPhase,
   );
+}
+
+export async function requestDatasetDownloadUrls(): Promise<DatasetDownloadUrlsResponse> {
+  const response = await axios.post<DatasetDownloadUrlsResponse>(
+    `${API_URL}/dataset/download-urls`,
+  );
+  return response.data;
+}
+
+/** Signed GCS URLs are absolute. Stream mode returns API-relative paths. */
+export function resolveDownloadUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = API_BASE.replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
 }
 
 export function useDatasetUpload() {
