@@ -1,3 +1,6 @@
+import { Copy, Check, Plus, ArrowDown } from "lucide-react";
+import { useChatLauncher } from "../hooks/useChatLauncher";
+import { CAMPUS_RPCA_GUIDE } from "../constants/campusRpcaGuide";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AxiosError } from "axios";
 import ReactMarkdown from "react-markdown";
@@ -151,9 +154,9 @@ function TypingIndicator() {
       aria-label="Assistant is thinking"
     >
       <span className="inline-flex gap-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-3 py-2 shadow-sm">
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 motion-safe:animate-bounce [animation-delay:0ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 motion-safe:animate-bounce [animation-delay:150ms]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 motion-safe:animate-bounce [animation-delay:300ms]" />
       </span>
       <span>Thinking…</span>
     </div>
@@ -164,6 +167,12 @@ export default function ChatbotWidget({
   selectedPlotType,
   onApplyFormPatch,
 }: ChatbotWidgetProps) {
+  const launcher = useChatLauncher();
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const followLatest = useRef(true);
+  const [showLatest, setShowLatest] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copyNotice, setCopyNotice] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([
@@ -195,7 +204,7 @@ export default function ChatbotWidget({
     const border =
       parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
     const maxHeight = lineHeight * MAX_TEXTAREA_ROWS + padding + border;
-    const next = Math.min(el.scrollHeight, maxHeight);
+    const next = Math.min(el.scrollHeight + border, maxHeight);
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
   }, []);
@@ -203,20 +212,39 @@ export default function ChatbotWidget({
   useEffect(() => {
     if (!isOpen) return;
     adjustTextareaHeight();
-  }, [input, isOpen, adjustTextareaHeight]);
+  }, [input, isOpen, isExpanded, adjustTextareaHeight]);
 
   useEffect(() => {
     if (!isOpen) return;
+    if (!followLatest.current) { setShowLatest(true); return; }
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: "instant",
     });
   }, [messages, isOpen, isSending, error]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    textareaRef.current?.focus();
+    const resize = new ResizeObserver(adjustTextareaHeight);
+    if (textareaRef.current) resize.observe(textareaRef.current);
+    return () => resize.disconnect();
+  }, [isOpen, adjustTextareaHeight]);
+
+  const copyMessage = async (message: UiMessage) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopiedId(message.id);
+      setCopyNotice("Answer copied.");
+    } catch { setCopyNotice("Could not copy. Select the answer text and copy it manually."); }
+  };
 
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
     if (!trimmed || isSending) return;
 
+    followLatest.current = true;
+    setShowLatest(false);
     const userMsg: UiMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -245,8 +273,9 @@ export default function ChatbotWidget({
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            "I can update the dashboard form for that. Review the settings card and apply it when you're ready.",
+          content: patch.targetPlotType === "rpca-analysis"
+            ? "I’ve prepared the settings below. Click **Apply settings**, check the dates and meters in the **Campus overview** panel, then click **Generate**. You’ll get three charts: unusual energy use, actual use compared with usual use, and campus total use compared with your limit. You’ll also see how many hours were above the limit."
+            : "I can update the dashboard form for that. Review the settings card and apply it when you're ready.",
         },
       ]);
       setProposedPatch(patch);
@@ -294,6 +323,7 @@ export default function ChatbotWidget({
   const handleClose = () => {
     setIsOpen(false);
     setIsExpanded(false);
+    requestAnimationFrame(() => launcherRef.current?.focus());
   };
 
   const handleApplyPatch = () => {
@@ -304,8 +334,9 @@ export default function ChatbotWidget({
       {
         id: crypto.randomUUID(),
         role: "assistant",
-        content:
-          "Applied those settings to the dashboard form. Check any dataset-specific meter choices before generating the analysis.",
+        content: proposedPatch.targetPlotType === "rpca-analysis"
+          ? "Your settings are ready in the **Campus overview** panel. Check the dates and meters, then click **Generate** in that panel to see the three charts and the number of hours above your limit. The analysis has not started yet. Long date ranges can take several minutes."
+          : "Applied those settings to the dashboard form. Check any dataset-specific meter choices before generating the analysis.",
       },
     ]);
     setProposedPatch(null);
@@ -313,30 +344,38 @@ export default function ChatbotWidget({
 
   const panelWidth = isExpanded
     ? "fixed inset-0 z-[60]"
-    : "fixed bottom-[calc(3.25rem+0.75rem)] right-6 z-50 w-[min(100%,420px)] max-w-[calc(100vw-1.5rem)] h-[min(640px,calc(100vh-6rem))]";
+    : "fixed bottom-24 right-6 z-50 w-[min(100%,480px)] max-w-[calc(100vw-1.5rem)] h-[min(720px,calc(100dvh-6rem))]";
 
   return (
     <>
       {isOpen && (
         <div
+          role="dialog"
+          aria-label="Energy Assistant"
+          onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); handleClose(); } }}
           className={`${panelWidth} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-colors ${
             isExpanded ? "rounded-none border-0" : ""
           }`}
         >
-          <div className="px-4 py-3 bg-[#ba0c2f] text-white flex items-center justify-between shrink-0">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 flex items-center justify-between shrink-0">
             <div>
               <h3 className="text-sm font-semibold tracking-tight">
                 Energy Assistant
               </h3>
-              <p className="text-xs text-red-100/90 mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 Meters, usage, overage & trends
               </p>
             </div>
             <div className="flex items-center gap-1">
+              <button type="button" disabled={isSending} aria-label="Start a new chat" title="New chat" className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40" onClick={() => {
+                setMessages([{ id: "welcome", role: "assistant", content: WELCOME_MESSAGE }]);
+                setSessionId(undefined); setProposedPatch(null); setError(null); setInput(""); setCopiedId(null); setCopyNotice("");
+                followLatest.current = true; setShowLatest(false); textareaRef.current?.focus();
+              }}><Plus size={18} /></button>
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
-                className="p-1.5 rounded-md hover:bg-white/20 transition-colors"
+                className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label={
                   isExpanded ? "Exit full screen" : "Expand to full screen"
                 }
@@ -374,7 +413,7 @@ export default function ChatbotWidget({
               <button
                 type="button"
                 onClick={handleClose}
-                className="p-1.5 rounded-md hover:bg-white/20 transition-colors"
+                className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label="Close chat window"
               >
                 <svg
@@ -396,18 +435,32 @@ export default function ChatbotWidget({
 
           <div
             ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900/50 transition-colors"
+            onScroll={(event) => {
+              const el = event.currentTarget;
+              followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+              if (followLatest.current) setShowLatest(false);
+            }}
+            className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-800 overscroll-contain transition-colors"
           >
             <div
-              className={`p-4 space-y-4 ${isExpanded ? "max-w-3xl mx-auto w-full" : ""}`}
+              className={`p-5 space-y-6 ${isExpanded ? "max-w-3xl mx-auto w-full" : ""}`}
             >
+              <details className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                <summary className="cursor-pointer font-semibold">Campus overview guide</summary>
+                <div className="mt-3">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={assistantMarkdownComponents}>
+                    {CAMPUS_RPCA_GUIDE}
+                  </ReactMarkdown>
+                </div>
+              </details>
+
               {messages.map((m) => (
                 <div
                   key={m.id}
                   className={`flex flex-col gap-1 ${m.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <span
-                    className={`text-[10px] font-medium uppercase tracking-wider px-1 ${
+                    className={`text-xs font-medium px-1 ${
                       m.role === "user"
                         ? "text-gray-400 dark:text-gray-500"
                         : "text-[#ba0c2f]/80 dark:text-red-300/80"
@@ -418,8 +471,8 @@ export default function ChatbotWidget({
                   <div
                     className={
                       m.role === "user"
-                        ? "max-w-[min(92%,36rem)] rounded-2xl rounded-tr-md px-4 py-2.5 text-sm leading-relaxed bg-[#ba0c2f] text-white shadow-sm whitespace-pre-wrap wrap-break-word"
-                        : "max-w-[min(92%,36rem)] rounded-2xl rounded-tl-md px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 shadow-sm wrap-break-word"
+                        ? "max-w-[min(92%,36rem)] rounded-2xl rounded-tr-md px-4 py-2.5 text-sm leading-relaxed bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 whitespace-pre-wrap wrap-break-word"
+                        : "w-full min-w-0 text-sm leading-7 text-gray-800 dark:text-gray-100 wrap-break-word"
                     }
                   >
                     {m.role === "user" ? (
@@ -433,6 +486,11 @@ export default function ChatbotWidget({
                       </ReactMarkdown>
                     )}
                   </div>
+                  {m.role === "assistant" && m.id !== "welcome" && (
+                    <button type="button" onClick={() => void copyMessage(m)} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700" aria-label="Copy answer">
+                      {copiedId === m.id ? <Check size={14} /> : <Copy size={14} />}{copiedId === m.id ? "Copied" : "Copy"}
+                    </button>
+                  )}
                 </div>
               ))}
 
@@ -512,6 +570,11 @@ export default function ChatbotWidget({
             </div>
           </div>
 
+          <span role="status" className="sr-only">{copyNotice}</span>
+          {showLatest && <button type="button" className="mx-auto my-2 inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 dark:border-gray-600" onClick={() => {
+            followLatest.current = true; setShowLatest(false);
+            scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+          }}><ArrowDown size={14} />Latest message</button>}
           <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 transition-colors">
             <div
               className={`flex gap-2 items-end ${isExpanded ? "max-w-3xl mx-auto w-full" : ""}`}
@@ -524,7 +587,7 @@ export default function ChatbotWidget({
                   rows={1}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault();
                       void handleSend();
                     }
@@ -553,8 +616,24 @@ export default function ChatbotWidget({
       {!isOpen && (
         <button
           type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className="fixed bottom-13 right-6 z-[70] w-14 h-14 rounded-full bg-[#ba0c2f] hover:bg-[#9a0a26] text-white shadow-lg flex items-center justify-center transition-colors"
+          ref={launcherRef}
+          style={{ left: launcher.position.x, top: launcher.position.y, touchAction: "none" }}
+          onPointerDown={launcher.onPointerDown}
+          onPointerMove={launcher.onPointerMove}
+          onPointerUp={launcher.onPointerUp}
+          onPointerCancel={launcher.onPointerCancel}
+          onLostPointerCapture={launcher.onPointerUp}
+          onKeyDown={(event) => {
+            const offsets: Record<string, [number, number]> = { ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20] };
+            if (offsets[event.key]) { event.preventDefault(); launcher.move(...offsets[event.key]); }
+          }}
+          onClick={(event) => {
+            if (event.detail !== 0 && launcher.moved.current) { launcher.moved.current = false; return; }
+            followLatest.current = true; setIsOpen((prev) => !prev);
+          }}
+          title="Click to open or close chat. Drag to move, or use arrow keys when focused."
+          aria-expanded={isOpen}
+          className="fixed cursor-grab active:cursor-grabbing select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ba0c2f] z-[70] w-14 h-14 rounded-full bg-[#ba0c2f] hover:bg-[#9a0a26] text-white shadow-lg flex items-center justify-center transition-colors"
           aria-label={isOpen ? "Hide chatbot" : "Open chatbot"}
         >
           <svg

@@ -113,6 +113,7 @@ export interface OutlierPreviewRequest {
   meter: string;
   meters_to_add?: Record<string, string[]>;
   manual_outliers?: Record<string, string[]>;
+  manual_outlier_replacement?: "average" | "zero";
   cleaning_method?: CleaningMethod | null;
   cleaning_window?: number;
   cleaning_n_sigma?: number;
@@ -269,6 +270,7 @@ export interface BaseRequest {
   rpca_tol?: number;
   rpca_max_iter?: number;
   manual_outliers?: Record<string, string[]>;
+  manual_outlier_replacement?: "average" | "zero";
   outlierZapMode?: OutlierZapMode;
 }
 
@@ -645,6 +647,7 @@ export interface SimpleRpcaResponse {
 
 // Plot Types
 export type PlotType =
+  | "usage-history"
   | "time-series"
   | "forecast"
   | "seasonal-analysis"
@@ -691,12 +694,25 @@ export interface StoredManualOutliers {
   startDate: string;
   endDate: string;
   cleaningMethod: string | null;
+  manual_outlier_replacement?: "average" | "zero";
   manual_outliers: Record<string, string[]>;
 }
 
 export interface DatasetUploadUrlsResponse {
   csv_upload_url: string;
   holiday_upload_url: string;
+}
+
+export interface DatasetDownloadUrlsResponse {
+  success: boolean;
+  mode: "signed" | "stream";
+  bucket?: string | null;
+  csv_download_url: string;
+  holiday_download_url: string;
+  csv_filename: string;
+  holiday_filename: string;
+  expires_in_seconds: number | null;
+  instructions?: string;
 }
 
 export interface DatasetUploadResponse {

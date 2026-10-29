@@ -15,77 +15,15 @@ export function ForecastOptionsSection({ form }: ForecastOptionsSectionProps) {
     <>
 {/* Forecast Options - Only for Time Series */}
           {form.selectedPlotType === "time-series" && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.forecast}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    form.setForecast(checked);
-                    if (checked) {
-                      form.setAssessment(false);
-                      form.setShowForecastOptions(true);
-                    } else {
-                      form.setShowForecastOptions(form.assessment);
-                    }
-                  }}
-                  className="h-4 w-4 text-[#ba0c2f] focus:ring-[#ba0c2f] border-gray-300 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Enable Forecast Mode
-                </span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer mt-3">
-                <input
-                  type="checkbox"
-                  checked={form.assessment}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    form.setAssessment(checked);
-                    if (checked) {
-                      form.setForecast(false);
-                      form.setShowForecastOptions(true);
-                    } else {
-                      form.setShowForecastOptions(form.forecast);
-                    }
-                  }}
-                  className="h-4 w-4 text-[#ba0c2f] focus:ring-[#ba0c2f] border-gray-300 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Enable Assessment Mode
-                </span>
-              </label>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200">
               {form.showForecastOptions && (
-                <div className="mt-4 pl-7 space-y-4 border-l-2 border-[#ba0c2f]">
-                  <div>
-                    <label
-                      htmlFor="form.testHours"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Forecast Hours
-                      <span className="text-xs text-gray-500 font-normal ml-2">
-                        Hours to form.forecast into the future
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      id="form.testHours"
-                      value={form.testHours}
-                      onChange={(e) =>
-                        form.setTestHours(parseInt(e.target.value) || 240)
-                      }
-                      min="1"
-                      max="8760"
-                      className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all"
-                    />
-                  </div>
+                <div className="space-y-4">
                   <div>
                     <label
                       htmlFor="form.forecastModel"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Forecast Model
+                      Prediction method
                     </label>
                     <select
                       id="form.forecastModel"

@@ -2,10 +2,11 @@ import type { PlotTypeConfig } from "../types/api";
 
 // Available plot types configuration
 export const PLOT_TYPES: PlotTypeConfig[] = [
+  { id: "usage-history", label: "Explore patterns", description: "Understand past energy use, seasons, and weather", available: true, fields: ["start_date", "end_date", "meter", "cleaning_method", "smoothing_method", "smoothing_window"] },
   {
     id: "time-series",
-    label: "Time Series",
-    description: "View time series data with smoothing",
+    label: "Forecast & accuracy",
+    description: "Predict future use or check prediction accuracy",
     available: true,
     fields: [
       "start_date",
@@ -39,15 +40,15 @@ export const PLOT_TYPES: PlotTypeConfig[] = [
   },
   {
     id: "rpca-analysis",
-    label: "Campus RPCA",
-    description: "Run Robust PCA on the campus total",
+    label: "Campus overview",
+    description: "See usual campus use and hours above your limit",
     available: true,
     fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },
   {
     id: "threshold-detection",
-    label: "Threshold Detection",
-    description: "Overage threshold optimization and event analysis",
+    label: "Energy limits",
+    description: "Set a limit or get a suggested limit",
     available: true,
     fields: ["start_date", "end_date", "meter", "cleaning_method"],
   },

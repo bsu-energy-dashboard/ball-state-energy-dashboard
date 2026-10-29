@@ -1,14 +1,15 @@
+import { CalendarDays, Gauge, Wand2 } from "lucide-react";
 import {
   CLEANING_METHOD_EXTRA_FIELDS,
   type CleaningMethodKey,
 } from "../../../constants/cleaningMethodExtraFields";
-import { cleaningMethodOptionsForPlot } from "../../../constants/cleaningMethods";
+import { cleaningMethodOptionsForPlot, CLEANING_DESCRIPTIONS, defaultCleaningMethod } from "../../../constants/cleaningMethods";
 import type { CleaningMethod } from "../../../types/api";
 import type { ParameterFormBindings } from "../types";
 
 interface EssentialParametersSectionProps {
   form: ParameterFormBindings;
-  section?: "all" | "dates" | "options";
+  section?: "all" | "dates" | "options" | "meter" | "cleaning";
 }
 
 export function EssentialParametersSection({ form, section = "all" }: EssentialParametersSectionProps) {
@@ -20,10 +21,10 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
   return (
     <>
 {/* Date Range with Presets */}
-          {section !== "options" && form.shouldShowField("start_date") && form.shouldShowField("end_date") && (
+          {(section === "all" || section === "dates") && form.shouldShowField("start_date") && form.shouldShowField("end_date") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Date Range
+                <CalendarDays className="mr-2 inline h-4 w-4 text-[#0079A7] dark:text-[#AEDBE9]" aria-hidden="true" />Date range
               </label>
               
               {/* Quick Presets */}
@@ -33,32 +34,32 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
                   onClick={() => form.applyDatePreset("week")}
                   className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-[#ba0c2f] transition-colors"
                 >
-                  Last Week
+                  Latest week
                 </button>
                 <button
                   type="button"
                   onClick={() => form.applyDatePreset("month")}
                   className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-[#ba0c2f] transition-colors"
                 >
-                  Last Month
+                  Latest month
                 </button>
                 <button
                   type="button"
                   onClick={() => form.applyDatePreset("quarter")}
                   className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-[#ba0c2f] transition-colors"
                 >
-                  Last Quarter
+                  Latest 3 months
                 </button>
                 <button
                   type="button"
                   onClick={() => form.applyDatePreset("year")}
                   className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-[#ba0c2f] transition-colors"
                 >
-                  Last Year
+                  Latest year
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-4">
                 <div>
                   <label
                     htmlFor="startDate"
@@ -101,17 +102,18 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
           )}
 
           {/* Meter Selection */}
-          {section !== "dates" && form.shouldShowField("meter") && (
+          {(section === "all" || section === "options" || section === "meter") && form.shouldShowField("meter") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors">
               <label
                 htmlFor="meter"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
+                <Gauge className="mr-2 inline h-4 w-4 text-[#0079A7] dark:text-[#AEDBE9]" aria-hidden="true" />
                 {form.selectedPlotType === "threshold-detection"
                   ? "Main Meter"
                   : form.selectedPlotType === "rpca-analysis"
                     ? "Comparison Meter"
-                  : "Meter"}
+                  : "Location or meter"}
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
                   {form.selectedPlotType === "threshold-detection"
                     ? "Main meter — column checked against threshold"
@@ -125,7 +127,7 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
                 value={form.meter}
                 onChange={(e) => form.setMeter(e.target.value)}
                 required={form.selectedPlotType !== "rpca-analysis"}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white transition-all"
+                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:border-transparent bg-white dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 transition-all"
               >
                 <option value="">
                   {meterOptions.length === 0
@@ -146,19 +148,16 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
           )}
 
           {/* Cleaning Method */}
-          {section !== "dates" && form.shouldShowField("cleaning_method") && (
+          {(section === "all" || section === "options" || section === "cleaning") && form.shouldShowField("cleaning_method") && (
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors space-y-4">
               <div>
                 <label
                   htmlFor="cleaningMethod"
                   className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 >
-                  Data Cleaning Method
+                  <Wand2 className="mr-2 inline h-4 w-4 text-[#0079A7] dark:text-[#AEDBE9]" aria-hidden="true" />Data cleaning
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                    {form.selectedPlotType === "threshold-detection" ||
-                    form.selectedPlotType === "rpca-analysis"
-                      ? "Polynomial recommended for multi-meter overage"
-                      : "Optional: Remove outliers and anomalies"}
+                    Starting choice for this view: {defaultCleaningMethod(form.selectedPlotType)}
                   </span>
                 </label>
                 {(form.selectedPlotType === "threshold-detection" ||
@@ -184,6 +183,8 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
                     ),
                   )}
                 </select>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{CLEANING_DESCRIPTIONS[form.cleaningMethod]}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">A high reading can be real. Use the preview to review changes before running your analysis.</p>
               </div>
               {(form.selectedPlotType === "threshold-detection" ||
                 form.selectedPlotType === "rpca-analysis") &&

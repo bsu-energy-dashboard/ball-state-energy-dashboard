@@ -1,14 +1,15 @@
+import { CAMPUS_RPCA_DEMO } from "../constants/campusRpcaGuide";
 import type { CleaningMethod, EdaRoute, PlotType } from "../types/api";
 import type { DashboardFormPatch } from "../types/formAutomation";
 
 const PLOT_KEYWORDS: Array<[PlotType, RegExp]> = [
-  ["rpca-analysis", /\b(campus\s+)?rpca\b/i],
-  ["threshold-detection", /\bthreshold\b|\boverage\b/i],
+  ["rpca-analysis", /\b(campus\s+)?rpca\b|\bcampus overview\b/i],
+  ["threshold-detection", /\bthreshold\b|\boverage\b|\benergy limits\b/i],
   ["eda-plots", /\beda\b|\bexploratory\b/i],
   ["temperature-analysis", /\btemperature\b|\bweather\b/i],
   ["seasonal-analysis", /\bseasonal\b|\bseasonality\b/i],
-  ["time-series", /\btime\s*series\b|\bplot\b|\bchart\b/i],
   ["time-series", /\bforecast\b|\bpredict\b|\bassessment\b/i],
+  ["usage-history", /\btime\s*series\b|\bplot\b|\bchart\b/i],
 ];
 
 const CLEANING_METHODS: CleaningMethod[] = [
@@ -127,21 +128,17 @@ function looksLikeFormControlRequest(text: string): boolean {
 }
 
 function buildRecommendedRpcaPatch(text: string): DashboardFormPatch {
-  const threshold = numberAfter(text, /\bthreshold\b/) ?? 22000;
+  const threshold = numberAfter(text, /\bthreshold\b/) ?? CAMPUS_RPCA_DEMO.threshold;
   return {
     id: newPatchId(),
     targetPlotType: "rpca-analysis",
     summary: "Demo Campus RPCA setup",
     updates: {
-      startDate: "2024-04-01T00:00",
-      endDate: "2025-07-28T23:59",
-      cleaningMethod: "Polynomial",
-      cleaningWindow: 12,
-      cleaningNSigma: 3.3,
+      ...CAMPUS_RPCA_DEMO,
       threshold: String(threshold),
     },
     notes: [
-      "Choose the comparison meter and total-energy source meters in the form before running.",
+      "Check which meter you want to compare and which meters make up the campus total. After applying these settings, click Generate in the Campus overview panel to get your results.",
     ],
   };
 }
