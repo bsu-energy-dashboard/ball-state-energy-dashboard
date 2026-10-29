@@ -1,6 +1,7 @@
+import { CalendarDays, Play, Settings2 } from "lucide-react";
 import { useEffect, useRef, type FormEvent } from "react";
 import { toast } from "react-toastify";
-import type { BaseRequest, PlotType } from "../../types/api";
+import type { BaseRequest, PlotType, EdaRoute } from "../../types/api";
 import { useMeterList, useDatasetInfo } from "../../services/api";
 import { useParameterForm } from "../../hooks/useParameterForm";
 import { buildBaseRequest } from "../../utils/parameter-form/buildBaseRequest";
@@ -8,7 +9,7 @@ import { datasetIdFromInfo } from "../../utils/manualOutliersStorage";
 import { cleaningMethodOptionsForPlot } from "../../constants/cleaningMethods";
 import type { DashboardFormPatch } from "../../types/formAutomation";
 import { ParameterFormHeader } from "./ParameterFormHeader";
-import { EdaRouteSelector } from "./sections/EdaRouteSelector";
+
 import { EssentialParametersSection } from "./sections/EssentialParametersSection";
 import { EdaOptionsSection } from "./sections/EdaOptionsSection";
 import { ThresholdOptionsSection } from "./sections/ThresholdOptionsSection";
@@ -24,6 +25,7 @@ interface ParameterFormProps {
   selectedPlotType?: PlotType;
   initialValues?: BaseRequest | null;
   formPatch?: DashboardFormPatch | null;
+  explorationRoute?: EdaRoute;
 }
 
 function positiveInt(value: number, fallback: number): number {
@@ -43,6 +45,7 @@ export default function ParameterForm({
   selectedPlotType = "time-series",
   initialValues,
   formPatch,
+  explorationRoute,
 }: ParameterFormProps) {
   const { data: meterList, isFetched: meterListFetched } = useMeterList();
   const { data: datasetInfo } = useDatasetInfo();
@@ -54,10 +57,14 @@ export default function ParameterForm({
     selectedPlotType,
     meterList,
   });
+  const { edaRoute, setEdaRoute } = form;
+  useEffect(() => {
+    if (explorationRoute && edaRoute !== explorationRoute) setEdaRoute(explorationRoute);
+  }, [explorationRoute, edaRoute, setEdaRoute]);
   const lastAppliedPatchIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!formPatch || lastAppliedPatchIdRef.current === formPatch.id) return;
+    if (!formPatch || (formPatch.targetPlotType && formPatch.targetPlotType !== selectedPlotType) || lastAppliedPatchIdRef.current === formPatch.id) return;
     lastAppliedPatchIdRef.current = formPatch.id;
 
     const applied: string[] = [];
@@ -368,7 +375,15 @@ export default function ParameterForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const result = buildBaseRequest({
-      state: form,
+      state: selectedPlotType === "threshold-detection" ? {
+        ...form,
+        analysisWindowStart: form.analysisWindowStart || form.startDate.slice(0, 10),
+        analysisWindowEnd: form.analysisWindowEnd || form.endDate.slice(0, 10),
+        contributionWindowStart: form.contributionWindowStart || form.startDate.slice(0, 10),
+        contributionWindowEnd: form.contributionWindowEnd || form.endDate.slice(0, 10),
+        plotWindowStart: form.plotWindowStart || form.startDate.slice(0, 10),
+        plotWindowEnd: form.plotWindowEnd || form.endDate.slice(0, 10),
+      } : form,
       selectedPlotType,
       shouldShowField: form.shouldShowField,
       meterGroups: form.meterGroups,
@@ -380,10 +395,10 @@ export default function ParameterForm({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
       <ParameterFormHeader />
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="analysis-form p-4 sm:p-6 space-y-6">
         {meterListFetched && !datasetReady && (
           <div
             role="alert"
@@ -394,58 +409,54 @@ export default function ParameterForm({
           </div>
         )}
 
-        {selectedPlotType === "eda-plots" && (
-          <EdaRouteSelector form={form} />
+        {selectedPlotType === "time-series" && (
+          <section className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+            <label htmlFor="prediction-purpose" className="block font-medium">What would you like to do?</label>
+            <select id="prediction-purpose" value={form.assessment ? "assessment" : "forecast"} className="w-full rounded-lg border p-3 dark:bg-gray-700 dark:border-gray-600" onChange={(e) => { form.setAssessment(e.target.value === "assessment"); form.setForecast(e.target.value === "forecast"); }}>
+              <option value="forecast">Predict future use</option>
+              <option value="assessment">Check prediction accuracy</option>
+            </select>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{form.assessment ? "We reserve the end of your selected history, then compare predictions with those recorded readings." : "We use the selected history to estimate what comes next."}</p>
+            <label htmlFor="prediction-hours" className="block text-sm font-medium">{form.assessment ? "Hours to reserve for checking" : "Hours ahead to predict"}</label>
+            <input id="prediction-hours" type="number" min={1} max={8760} value={form.testHours} onChange={(e) => form.setTestHours(Number(e.target.value))} className="w-full rounded-lg border p-3 dark:bg-gray-700 dark:border-gray-600" required />
+            <p className="text-xs text-gray-500 dark:text-gray-400">24 hours = 1 day · 168 hours = 1 week. Predictions are estimates, not guarantees.</p>
+          </section>
         )}
-
-        {selectedPlotType === "threshold-detection" && (
-          <ThresholdOptionsSection form={form} />
-        )}
-
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-1 w-8 bg-[#ba0c2f] rounded" />
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Essential Parameters
-            </h3>
-          </div>
-
-          {selectedPlotType === "rpca-analysis" ? (
-            <>
-              <EssentialParametersSection form={form} section="dates" />
-              <details className="border-t border-gray-200 pt-4 dark:border-gray-600">
-                <summary className="cursor-pointer text-sm font-semibold text-gray-800 dark:text-gray-200">Advanced</summary>
-                <div className="mt-4 space-y-4">
-                  <EssentialParametersSection form={form} section="options" />
-                  <ThresholdOptionsSection form={form} />
-                  <OutlierZapPanel form={form} selectedPlotType={selectedPlotType} datasetId={datasetId} />
-                </div>
-              </details>
-            </>
-          ) : <EssentialParametersSection form={form} />}
-          {selectedPlotType !== "rpca-analysis" && (
-          <OutlierZapPanel
-            form={form}
-            selectedPlotType={selectedPlotType}
-            datasetId={datasetId}
-          />
+          <h3 className="flex items-center gap-2 font-semibold"><CalendarDays size={18} aria-hidden="true" />Time period{selectedPlotType !== "rpca-analysis" && " & location"}</h3>
+          <EssentialParametersSection form={form} section="dates" />
+          <p className="text-xs text-gray-500 dark:text-gray-400">Quick date choices end at the latest reading in your dataset.</p>
+          {selectedPlotType !== "rpca-analysis" && <EssentialParametersSection form={form} section="meter" />}
+          {selectedPlotType === "rpca-analysis" && <p className="text-sm text-gray-600 dark:text-gray-300">Campus sources are selected automatically. The energy limit is {form.threshold || "22000"} kW. You’ll see unusual usage, actual versus usual usage, and hours above the limit. Change these settings below if needed.</p>}
+          {selectedPlotType === "threshold-detection" && (
+            <div className="space-y-3">
+              <label htmlFor="simple-limit-mode" className="block font-medium">Choose an energy limit</label>
+              <select id="simple-limit-mode" value={form.thresholdMode} onChange={(e) => form.setThresholdMode(e.target.value as "fixed" | "rpca")} className="w-full rounded-lg border p-3 dark:bg-gray-700 dark:border-gray-600"><option value="rpca">Suggest a limit from the data</option><option value="fixed">Use my limit</option></select>
+              {form.thresholdMode === "fixed" && <label className="block text-sm">Energy limit (kW)<input type="number" min={0} step="any" required value={form.threshold} onChange={(e) => form.setThreshold(e.target.value)} className="mt-2 w-full rounded-lg border p-3 dark:bg-gray-700 dark:border-gray-600" /></label>}
+            </div>
           )}
-          <EdaOptionsSection form={form} />
-          <ForecastOptionsSection form={form} />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Data preparation: {form.cleaningMethod && form.cleaningMethod !== "None" ? `${form.cleaningMethod} automatic cleaning` : "original readings; no automatic cleaning"}. You can review or change this below.</p>
         </div>
-
-        {selectedPlotType !== "rpca-analysis" && (
-          <>
-            <SmoothingOptionsSection form={form} />
+        <details className="rounded-xl border border-gray-200 p-4 dark:border-gray-700" key={`${selectedPlotType}-advanced`}>
+          <summary className="cursor-pointer font-medium"><Settings2 size={16} className="mr-2 inline" aria-hidden="true" />Advanced settings <span className="text-sm font-normal text-gray-500">— optional</span></summary>
+          <div className="mt-5 space-y-5">
+            {selectedPlotType === "rpca-analysis" && <EssentialParametersSection form={form} section="meter" />}
+            <EssentialParametersSection form={form} section="cleaning" />
+            {(selectedPlotType === "rpca-analysis" || selectedPlotType === "threshold-detection") && <ThresholdOptionsSection form={form} />}
+            <OutlierZapPanel form={form} selectedPlotType={selectedPlotType} datasetId={datasetId} />
+            <EdaOptionsSection form={form} />
+            <ForecastOptionsSection form={{ ...form, forecast: selectedPlotType === "time-series" && !form.assessment, showForecastOptions: true }} />
+            {selectedPlotType === "usage-history" && <SmoothingOptionsSection form={form} />}
             <MeterGroupsSection form={form} />
-          </>
-        )}
+          </div>
+        </details>
 
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col gap-4 border-t border-gray-200 pt-5 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{isLoading ? "Your analysis is running. Results will appear below." : "Ready? Generate your analysis to see the results below."}</p>
           <button
             type="submit"
             disabled={isLoading || (meterListFetched && !datasetReady)}
-            className="w-full px-6 py-3 text-base font-semibold bg-[#ba0c2f] text-white rounded-lg hover:bg-[#9a0a26] focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+            className="w-full sm:w-auto shrink-0 px-6 py-3 text-base font-semibold bg-[#ba0c2f] text-white rounded-lg hover:bg-[#9a0a26] focus:outline-none focus:ring-2 focus:ring-[#ba0c2f] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -471,7 +482,7 @@ export default function ParameterForm({
                 Generating Analysis...
               </span>
             ) : (
-              selectedPlotType === "rpca-analysis" ? "Generate" : "Generate Analysis"
+              <span className="flex items-center justify-center gap-2"><Play size={16} aria-hidden="true" />{selectedPlotType === "rpca-analysis" ? "Generate" : "Show results"}</span>
             )}
           </button>
         </div>

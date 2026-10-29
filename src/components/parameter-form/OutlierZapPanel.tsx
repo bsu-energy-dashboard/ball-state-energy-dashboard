@@ -18,7 +18,8 @@ import {
 } from "../../utils/manualOutliersStorage";
 import {
   addZap,
-  nearestPoint,
+  zapBaselineRequest,
+  retainedReadingStats,
   removeZap,
   valueAtDatetime,
   zapsForMeter,
@@ -30,9 +31,6 @@ interface OutlierZapPanelProps {
   datasetId: string;
 }
 
-function sliceDateOnly(value: string): string {
-  return value.slice(0, 10);
-}
 
 export function OutlierZapPanel({
   form,
@@ -41,7 +39,8 @@ export function OutlierZapPanel({
 }: OutlierZapPanelProps) {
   const { darkMode } = useDarkMode();
   const [expanded, setExpanded] = useState(false);
-  const [debouncedZaps, setDebouncedZaps] = useState<string[]>([]);
+  const [debouncedSelection, setDebouncedSelection] = useState({ meter: "", zaps: [] as string[] });
+  const [storageRevision, setStorageRevision] = useState(0);
 
   const isOverage =
     selectedPlotType === "threshold-detection" ||
@@ -51,36 +50,38 @@ export function OutlierZapPanel({
     : form.meter;
 
   const previewMeterOptions = useMemo(() => {
-    const csvMeters = new Set(form.meterList?.meters ?? []);
+    const csvMeters = new Set([...(form.meterList?.meters ?? []), ...form.meterGroups.map((group) => group.name)]);
     const candidates = new Set([
       form.meter,
       ...form.includedMeters,
       ...form.seriesMeters,
     ]);
     return [...candidates].filter((m) => csvMeters.has(m));
-  }, [form.meter, form.includedMeters, form.seriesMeters, form.meterList?.meters]);
+  }, [form.meter, form.includedMeters, form.seriesMeters, form.meterList?.meters, form.meterGroups]);
 
   const storedEntry = useMemo(() => {
+    void storageRevision;
     if (!datasetId || !activeMeter) return null;
     return loadStoredZaps(datasetId, activeMeter);
-  }, [datasetId, activeMeter]);
+  }, [datasetId, activeMeter, storageRevision]);
 
-  const currentZaps = zapsForMeter(form.manualOutliers, activeMeter);
+  const currentZaps = useMemo(() => zapsForMeter(form.manualOutliers, activeMeter), [form.manualOutliers, activeMeter]);
+  const debouncedZaps = useMemo(() => debouncedSelection.meter === activeMeter ? debouncedSelection.zaps : [], [debouncedSelection, activeMeter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setDebouncedZaps(currentZaps);
+      setDebouncedSelection({ meter: activeMeter, zaps: currentZaps });
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [currentZaps]);
+  }, [currentZaps, activeMeter]);
 
   const metersToAdd = useMemo(() => {
-    const group = form.meterGroups.find((g) => g.name === form.meter);
+    const group = form.meterGroups.find((g) => g.name === activeMeter);
     if (group?.meters.length) {
       return { [group.name]: group.meters };
     }
     return undefined;
-  }, [form.meter, form.meterGroups]);
+  }, [activeMeter, form.meterGroups]);
 
   const includeCleanedPreview =
     form.outlierZapMode !== "none" && debouncedZaps.length > 0;
@@ -90,10 +91,11 @@ export function OutlierZapPanel({
       return null;
     }
     const req: OutlierPreviewRequest = {
-      start_date: sliceDateOnly(form.startDate),
-      end_date: sliceDateOnly(form.endDate),
+      start_date: form.startDate,
+      end_date: form.endDate,
       meter: activeMeter,
       include_cleaned_preview: includeCleanedPreview,
+      manual_outlier_replacement: form.manualOutlierReplacement,
     };
     if (metersToAdd) req.meters_to_add = metersToAdd;
     if (form.cleaningMethod && form.cleaningMethod !== "None") {
@@ -120,6 +122,7 @@ export function OutlierZapPanel({
     form.endDate,
     activeMeter,
     metersToAdd,
+    form.manualOutlierReplacement,
     form.cleaningMethod,
     form.cleaningExtra,
     form.cleaningDaily,
@@ -128,19 +131,31 @@ export function OutlierZapPanel({
     debouncedZaps,
   ]);
 
-  const { data: preview, isLoading, error } = useOutlierPreview(previewRequest, {
-    enabled: !!previewRequest && form.outlierZapMode !== "none",
+  const hasAutomaticCleaning = !!form.cleaningMethod && form.cleaningMethod !== "None";
+  // Keep the selectable baseline independent of zaps, so clicking never reloads it.
+  const baselineRequest = zapBaselineRequest(previewRequest);
+  const { data: baseline, isLoading, error: baselineError } = useOutlierPreview(baselineRequest, {
+    enabled: !!baselineRequest && form.outlierZapMode !== "none",
   });
+  const { data: preview, isFetching, isPlaceholderData, error: correctionError } = useOutlierPreview(previewRequest, {
+    enabled: !!previewRequest && form.outlierZapMode !== "none" && debouncedZaps.length > 0,
+  });
+  const selectableSeries = hasAutomaticCleaning ? baseline?.cleaned_preview : baseline?.series;
+  const error = baselineError || (currentZaps.length > 0 ? correctionError : null);
+  const summaryStats = useMemo(() => retainedReadingStats(selectableSeries ?? [], currentZaps), [selectableSeries, currentZaps]);
+  const refreshingPreview = currentZaps.length > 0 && (isFetching || currentZaps !== debouncedZaps);
 
   const handleModeChange = (mode: OutlierZapMode) => {
     form.setOutlierZapMode(mode);
     if (mode === "from_storage" && storedEntry) {
+      form.setManualOutlierReplacement(storedEntry.manual_outlier_replacement ?? "average");
       form.setManualOutliers({
         ...form.manualOutliers,
         ...storedEntry.manual_outliers,
       });
     }
     if (mode === "this_tab" && storedEntry) {
+      form.setManualOutlierReplacement(storedEntry.manual_outlier_replacement ?? "average");
       form.setManualOutliers({
         ...form.manualOutliers,
         ...storedEntry.manual_outliers,
@@ -153,6 +168,7 @@ export function OutlierZapPanel({
 
   const acceptStored = () => {
     if (!storedEntry) return;
+    form.setManualOutlierReplacement(storedEntry.manual_outlier_replacement ?? "average");
     const { pruned, removedCount } = pruneOutliersOutsideRange(
       storedEntry.manual_outliers,
       form.startDate,
@@ -172,19 +188,14 @@ export function OutlierZapPanel({
       if (form.outlierZapMode === "none" || form.outlierZapMode === "from_storage") {
         return;
       }
-      const point = event.points?.[0];
-      if (!point || !preview?.series.length) return;
-      const clickXMs =
-        typeof point.x === "number"
-          ? point.x
-          : new Date(String(point.x)).getTime();
-      const nearest = nearestPoint(preview.series, clickXMs);
-      if (!nearest) return;
-      form.setManualOutliers(
-        addZap(form.manualOutliers, activeMeter, nearest.datetime),
-      );
+      // Use the exact source timestamp, never a rounded Plotly x-axis value.
+      const point = event.points?.find((p) => p.curveNumber === 0);
+      if (!point || typeof point.customdata !== "string") return;
+      const datetime = point.customdata;
+      if (!selectableSeries?.some((p) => p.datetime === datetime)) return;
+      form.setManualOutliers((previous) => addZap(previous, activeMeter, datetime));
     },
-    [form, preview?.series, activeMeter],
+    [form, selectableSeries, activeMeter],
   );
 
   const handleRemoveZap = (datetime: string) => {
@@ -211,14 +222,17 @@ export function OutlierZapPanel({
       startDate: form.startDate,
       endDate: form.endDate,
       cleaningMethod: form.cleaningMethod || null,
+      manual_outlier_replacement: form.manualOutlierReplacement,
       manual_outliers: { [activeMeter]: meterZaps },
     });
+    setStorageRevision((revision) => revision + 1);
     toast.success("Zaps saved to browser storage.");
   };
 
   const handleClearSaved = () => {
     if (!datasetId || !activeMeter) return;
     clearStoredZaps(datasetId, activeMeter);
+    setStorageRevision((revision) => revision + 1);
     handleClearAll();
     form.setOutlierZapMode("none");
     toast.success("Saved zaps cleared.");
@@ -231,25 +245,27 @@ export function OutlierZapPanel({
   const zapRows = currentZaps.map((datetime) => ({
     datetime,
     value:
-      preview?.series
-        ? valueAtDatetime(preview.series, datetime)
+      selectableSeries
+        ? valueAtDatetime(selectableSeries, datetime)
         : undefined,
   }));
 
   const traces: PlotParams["data"] = [];
-  if (preview?.series.length) {
+  if (selectableSeries?.length) {
     traces.push({
-      x: preview.series.map((p) => new Date(p.datetime)),
-      y: preview.series.map((p) => p.value),
+      x: selectableSeries.map((p) => p.datetime),
+      customdata: selectableSeries.map((p) => p.datetime),
+      hovertemplate: `%{customdata}<br>${hasAutomaticCleaning ? "After automatic cleaning" : "Original reading"}: %{y}<extra></extra>`,
+      y: selectableSeries.map((p) => p.value),
       mode: "lines+markers",
-      name: "Raw series",
+      name: hasAutomaticCleaning ? "After automatic cleaning" : "Original readings",
       type: "scatter",
-      marker: { size: 4 },
-      line: { color: darkMode ? "#93c5fd" : "#0079A7", width: 1.5 },
+      marker: { size: 7 },
+      line: { color: darkMode ? "#AEDBE9" : "#0079A7", width: 1.5 },
     });
   }
-  if (currentZaps.length && preview?.series.length) {
-    const zapped = preview.series.filter((p) =>
+  if (currentZaps.length && selectableSeries?.length) {
+    const zapped = selectableSeries.filter((p) =>
       currentZaps.includes(p.datetime),
     );
     if (zapped.length) {
@@ -258,19 +274,21 @@ export function OutlierZapPanel({
         y: zapped.map((p) => p.value),
         mode: "markers",
         name: "Zapped points",
+        hoverinfo: "skip",
         type: "scatter",
         marker: { size: 10, color: "#ba0c2f", symbol: "x" },
       });
     }
   }
-  if (preview?.cleaned_preview?.length) {
+  if (currentZaps.length > 0 && preview?.cleaned_preview?.length && !isPlaceholderData && !refreshingPreview) {
     traces.push({
       x: preview.cleaned_preview.map((p) => new Date(p.datetime)),
       y: preview.cleaned_preview.map((p) => p.value),
       mode: "lines",
       name: "Cleaned preview",
+      hoverinfo: "skip",
       type: "scatter",
-      line: { color: darkMode ? "#86efac" : "#16a34a", width: 1.5, dash: "dash" },
+      line: { color: darkMode ? "#F06B83" : "#ba0c2f", width: 1.5, dash: "dash" },
     });
   }
 
@@ -319,6 +337,16 @@ export function OutlierZapPanel({
             ))}
           </div>
 
+          <label className="block text-sm text-gray-700 dark:text-gray-300">
+            Replace selected readings with
+            <select value={form.manualOutlierReplacement}
+              onChange={(event) => form.setManualOutlierReplacement(event.target.value as "average" | "zero")}
+              className="ml-2 rounded border p-2 bg-white dark:bg-gray-800">
+              <option value="average">Average of neighbouring readings</option>
+              <option value="zero">Zero</option>
+            </select>
+          </label>
+          <p className="text-xs text-gray-500">Average uses the nearest valid reading on each side, excluding all selected points. At an edge it uses the available neighbour; with no valid neighbours it uses zero. Automatic cleaning, if enabled, runs afterwards.</p>
           {storedEntry &&
             form.outlierZapMode === "none" &&
             countZaps(storedEntry.manual_outliers) > 0 && (
@@ -365,18 +393,22 @@ export function OutlierZapPanel({
 
           {form.outlierZapMode !== "none" && chartReady && (
             <>
-              {preview?.stats && (
+              {selectableSeries && (
                 <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
+                  <span>{summaryStats.count.toLocaleString()} retained readings · {currentZaps.length} selected for correction</span>
                   <span className="px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600">
-                    max: {preview.stats.max.toLocaleString()}
+                    Highest retained reading: {summaryStats.max?.toLocaleString() ?? "—"}
                   </span>
                   <span className="px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600">
-                    p99: {preview.stats.p99.toLocaleString()}
+                    99th percentile: {summaryStats.p99?.toLocaleString() ?? "—"}
                   </span>
                 </div>
               )}
 
-              {isLoading && (
+              {baseline && refreshingPreview && (
+                <p role="status" className="text-xs text-gray-500 dark:text-gray-400">Updating corrected preview… You can keep selecting points.</p>
+              )}
+              {isLoading && !baseline && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Loading preview…
                 </p>
@@ -393,6 +425,9 @@ export function OutlierZapPanel({
                     data={traces}
                     layout={{
                       autosize: true,
+                      hovermode: "closest",
+                      clickmode: "event",
+                      uirevision: `${activeMeter}:${form.startDate}:${form.endDate}`,
                       height: 288,
                       margin: { l: 48, r: 16, t: 24, b: 40 },
                       paper_bgcolor: "transparent",
@@ -403,7 +438,7 @@ export function OutlierZapPanel({
                       showlegend: true,
                       legend: { orientation: "h", y: 1.15 },
                     }}
-                    config={{ displayModeBar: false, responsive: true }}
+                    config={{ displayModeBar: true, responsive: true, displaylogo: false }}
                     style={{ width: "100%", height: "100%" }}
                     useResizeHandler
                     onClick={handleChartClick}
@@ -411,9 +446,14 @@ export function OutlierZapPanel({
                 </div>
               )}
 
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {hasAutomaticCleaning
+                  ? `Showing readings after ${form.cleaningMethod} cleaning. Select any remaining problem points.`
+                  : "Showing original readings because automatic cleaning is off."}
+              </p>
               {form.outlierZapMode === "this_tab" && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Click a point on the chart to zap it.
+                  Click a point on the blue line to correct it. Zoom in to choose closely spaced readings. The table shows the exact timestamp selected; Remove undoes the selection. The dashed red line shows the result after your manual corrections and backend processing.
                 </p>
               )}
 

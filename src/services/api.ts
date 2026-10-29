@@ -1,3 +1,4 @@
+import { samePreviewSource } from "../utils/outlierZapChart";
 import {
   keepPreviousData,
   useIsFetching,
@@ -12,6 +13,7 @@ import type {
   TemperatureAnalysisResponse,
   MeterListResponse,
   DatasetInfoResponse,
+  DatasetDownloadUrlsResponse,
   DatasetUploadResponse,
   ForecastResponse,
   ChatRequest,
@@ -310,6 +312,20 @@ export async function uploadDataset(
   );
 }
 
+export async function requestDatasetDownloadUrls(): Promise<DatasetDownloadUrlsResponse> {
+  const response = await axios.post<DatasetDownloadUrlsResponse>(
+    `${API_URL}/dataset/download-urls`,
+  );
+  return response.data;
+}
+
+/** Signed GCS URLs are absolute. Stream mode returns API-relative paths. */
+export function resolveDownloadUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = API_BASE.replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
 export function useDatasetUpload() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -429,8 +445,7 @@ export const useEdaPlot = (
         meter: request.meter,
       };
 
-      if (request.cleaning_method)
-        body.cleaning_method = request.cleaning_method;
+      body.cleaning_method = request.cleaning_method && request.cleaning_method !== "None" ? request.cleaning_method : null;
       if (request.cleaning_window !== undefined)
         body.cleaning_window = request.cleaning_window;
       if (request.cleaning_n_sigma !== undefined)
@@ -557,9 +572,7 @@ export const useOverageThreshold = (
       if (request.clean_all_meters !== undefined) {
         body.clean_all_meters = request.clean_all_meters;
       }
-      if (request.cleaning_method) {
-        body.cleaning_method = request.cleaning_method;
-      }
+      body.cleaning_method = request.cleaning_method && request.cleaning_method !== "None" ? request.cleaning_method : null;
       if (request.cleaning_window !== undefined) {
         body.cleaning_window = request.cleaning_window;
       }
@@ -637,7 +650,7 @@ export const useSimpleRpca = (
       if (request.overage_windows?.length) {
         body.overage_windows = request.overage_windows;
       }
-      if (request.cleaning_method) body.cleaning_method = request.cleaning_method;
+      body.cleaning_method = request.cleaning_method && request.cleaning_method !== "None" ? request.cleaning_method : null;
       if (request.cleaning_window !== undefined) {
         body.cleaning_window = request.cleaning_window;
       }
@@ -694,7 +707,11 @@ export const useOutlierPreview = (
     },
     enabled: !!request && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 5,
-    placeholderData: keepPreviousData,
+    // Zap edits refresh the overlay in the background; meter/date changes need fresh data.
+    placeholderData: (previousData, previousQuery) =>
+      request && previousQuery && samePreviewSource(previousQuery.queryKey, outlierPreviewQueryKey(request))
+        ? previousData
+        : undefined,
   });
 };
 

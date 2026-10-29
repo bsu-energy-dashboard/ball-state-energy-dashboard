@@ -1,10 +1,6 @@
-import {
-  VictoryChart,
-  VictoryAxis,
-  VictoryTheme,
-  VictoryLegend,
-} from "victory";
-import { VictoryBoxPlot } from "victory-box-plot";
+import PlotViewTabs from "./PlotViewTabs";
+import InteractiveBoxPlot from "./InteractiveBoxPlot";
+import { formatStatistic } from "../utils/formatStatistic";
 import type { BaseRequest } from "../types/api";
 import { useSeasonalAnalysis } from "../services/api";
 import { AxiosError } from "axios";
@@ -68,182 +64,20 @@ export default function SeasonalAnalysisPlot({
     return null;
   }
 
-  const seasonOrder = [
-    "EarlyWinter",
-    "LateWinter",
-    "EarlySpring",
-    "LateSpring",
-    "Summer",
-    "EarlyFall",
-    "LateFall",
-  ];
-
-  // Transform data for Victory BoxPlot with numeric x values
-  // Use season index + offset for session status to group boxes side-by-side
-  const chartData = data.boxplot_data
-    .map((item) => {
-      const seasonIndex = seasonOrder.indexOf(item.season);
-      // Use season index + offset for session status (0.25 for In Session, 0.75 for Not in Session)
-      const xOffset = item.session_status === "In Session" ? 0.25 : 0.75;
-      return {
-        x: seasonIndex + xOffset, // 1.25, 1.75, 2.25, 2.75, etc.
-        min: item.min,
-        q1: item.q25,
-        median: item.q50,
-        q3: item.q75,
-        max: item.max,
-        mean: item.mean,
-        std: item.std,
-        count: item.count,
-        season: item.season,
-        session_status: item.session_status,
-      };
-    })
-    .sort((a, b) => {
-      const seasonDiff =
-        seasonOrder.indexOf(a.season) - seasonOrder.indexOf(b.season);
-      if (seasonDiff !== 0) return seasonDiff;
-      return a.session_status === "In Session" ? -1 : 1;
-    });
-
-  const inSession = chartData.filter((d) => d.session_status === "In Session");
-  const notInSession = chartData.filter(
-    (d) => d.session_status === "Not in Session"
-  );
-
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Compare seasons and times when classes are in session. In the box charts, each box contains the middle half of readings; the line inside marks the middle reading.</p>
       <ManualOutliersAudit
         applied={data.manual_outliers_applied}
         skipped={data.manual_outliers_skipped}
       />
-      {data.plot_png_base64 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-            Seasonal Analysis Plot - {data.meter}
-          </h3>
-          <img
-            src={`data:image/png;base64,${data.plot_png_base64}`}
-            alt={`Seasonal analysis plot for ${data.meter}`}
-            className="w-full h-auto rounded-lg border border-gray-200"
-          />
-        </div>
-      )}
-
-     {!data.plot_png_base64 && (
-       <div className="bg-white rounded-lg shadow-md p-6">
-       <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-         Seasonal Analysis - {data.meter}
-       </h3>
-       <div className="w-full overflow-x-auto">
-         <VictoryChart
-           theme={VictoryTheme.material}
-           domainPadding={{ x: 40 }}
-           height={500}
-           width={1000}
-           padding={{ top: 80, bottom: 80, left: 90, right: 60 }}
-         >
-           <VictoryLegend
-             x={200}
-             y={10}
-             orientation="horizontal"
-             gutter={20}
-             style={{ border: { stroke: "none" }, labels: { fontSize: 12 } }}
-             data={[
-               { name: "In Session", symbol: { fill: "#10b981" } },
-               { name: "Not in Session", symbol: { fill: "#ba0c2f" } },
-             ]}
-           />
-
-           <VictoryAxis
-             dependentAxis
-             label="Energy Consumption (kWh)"
-             style={{
-               axisLabel: { padding: 40, fontSize: 14 },
-               tickLabels: { fontSize: 12 },
-             }}
-           />
-
-           <VictoryAxis
-             tickValues={seasonOrder.map((_, i) => i + 1)}
-             tickFormat={seasonOrder}
-             label="Season"
-             style={{
-               axisLabel: { padding: 50, fontSize: 14 },
-               tickLabels: { fontSize: 11 },
-             }}
-           />
-
-           {/* In Session Boxplots */}
-           <VictoryBoxPlot
-             data={inSession}
-             x="x"
-             min="min"
-             q1="q1"
-             median="median"
-             q3="q3"
-             max="max"
-             boxWidth={18}
-             whiskerWidth={8}
-             style={{
-               min: { stroke: "#10b981", strokeWidth: 1.5 },
-               max: { stroke: "#10b981", strokeWidth: 1.5 },
-               q1: {
-                 fill: "#10b981",
-                 fillOpacity: 0.4,
-                 stroke: "#047857",
-                 strokeWidth: 1,
-               },
-               q3: {
-                 fill: "#10b981",
-                 fillOpacity: 0.4,
-                 stroke: "#047857",
-                 strokeWidth: 1,
-               },
-               median: { stroke: "#047857", strokeWidth: 2 },
-               minLabels: { fill: "none" },
-               maxLabels: { fill: "none" },
-             }}
-           />
-
-           {/* Not in Session Boxplots */}
-           <VictoryBoxPlot
-             data={notInSession}
-             x="x"
-             min="min"
-             q1="q1"
-             median="median"
-             q3="q3"
-             max="max"
-             boxWidth={18}
-             whiskerWidth={8}
-             style={{
-               min: { stroke: "#ba0c2f", strokeWidth: 1.5 },
-               max: { stroke: "#ba0c2f", strokeWidth: 1.5 },
-               q1: {
-                 fill: "#ba0c2f",
-                 fillOpacity: 0.4,
-                 stroke: "#7f1d1d",
-                 strokeWidth: 1,
-               },
-               q3: {
-                 fill: "#ba0c2f",
-                 fillOpacity: 0.4,
-                 stroke: "#7f1d1d",
-                 strokeWidth: 1,
-               },
-               median: { stroke: "#7f1d1d", strokeWidth: 2 },
-               minLabels: { fill: "none" },
-               maxLabels: { fill: "none" },
-             }}
-           />
-         </VictoryChart>
-       </div>
-     </div>
-     )}
+      <PlotViewTabs image={data.plot_png_base64} title="Seasonal comparison">
+        <InteractiveBoxPlot readings={data.boxplot_data} />
+      </PlotViewTabs>
 
       {/* Statistics Table */}
-      <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
+      <details className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+        <summary className="mb-3 cursor-pointer font-medium">Detailed readings and statistics</summary>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -251,10 +85,10 @@ export default function SeasonalAnalysisPlot({
                 Season
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Session Status
+                Class schedule
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mean
+                Average
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Median
@@ -283,19 +117,19 @@ export default function SeasonalAnalysisPlot({
                   {item.session_status}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.mean?.toFixed(2)}
+                  {formatStatistic(item.mean)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.q50?.toFixed(2)}
+                  {formatStatistic(item.q50)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.std?.toFixed(2)}
+                  {formatStatistic(item.std)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.min?.toFixed(2)}
+                  {formatStatistic(item.min)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.max?.toFixed(2)}
+                  {formatStatistic(item.max)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {item.count}
@@ -304,7 +138,7 @@ export default function SeasonalAnalysisPlot({
             ))}
           </tbody>
         </table>
-      </div>
+      </details>
 
       {/* Date Range Info */}
       <div className="bg-white rounded-lg shadow-md p-6">

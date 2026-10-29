@@ -25,7 +25,7 @@ export interface ParameterFormState {
   cleaningExtra: Record<string, number>;
   cleaningDaily: boolean;
   cleaningWeekly: boolean;
-  smoothingMethod: "ma" | "hp";
+  smoothingMethod: "" | "ma" | "hp";
   smoothingWindow: number;
   hpLambda: number;
   forecast: boolean;
@@ -123,6 +123,7 @@ export interface ParameterFormState {
   rpcaMaxIter: number;
   showThresholdAdvanced: boolean;
   outlierZapMode: OutlierZapMode;
+  manualOutlierReplacement: "average" | "zero";
   manualOutliers: Record<string, string[]>;
   outlierZapPreviewMeter: string;
 }

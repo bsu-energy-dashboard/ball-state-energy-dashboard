@@ -1,6 +1,12 @@
+import { Database } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { useDatasetInfo, useDatasetUpload } from "../services/api";
+import {
+  requestDatasetDownloadUrls,
+  resolveDownloadUrl,
+  useDatasetInfo,
+  useDatasetUpload,
+} from "../services/api";
 import type { DatasetUploadPhase } from "../types/api";
 import {
   extractApiErrorMessage,
@@ -29,6 +35,9 @@ export default function DatasetUploadPanel() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [confirmPartial, setConfirmPartial] = useState(false);
+  const [downloading, setDownloading] = useState<"csv" | "holiday" | null>(
+    null,
+  );
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,15 +123,40 @@ export default function DatasetUploadPanel() {
   const canUpload =
     hasAnyFile && !upload.isPending && (!isPartialUpload || confirmPartial);
 
+  const handleDownload = async (kind: "csv" | "holiday") => {
+    setDownloading(kind);
+    try {
+      const links = await requestDatasetDownloadUrls();
+      const url = resolveDownloadUrl(
+        kind === "csv" ? links.csv_download_url : links.holiday_download_url,
+      );
+      const filename =
+        kind === "csv" ? links.csv_filename : links.holiday_filename;
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.rel = "noopener noreferrer";
+      anchor.target = "_blank";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err));
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 transition-colors border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm mb-6 transition-colors border border-gray-200 dark:border-gray-700">
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-6 py-4 text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="h-1 w-8 bg-[#ba0c2f] rounded" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0079A7]/10 text-[#0079A7] dark:text-[#AEDBE9]"><Database size={20} aria-hidden="true" /></span>
           <div>
             <h2 className="text-lg font-semibold text-[#ba0c2f] dark:text-[#AEDBE9]">
               Dataset
@@ -193,6 +227,28 @@ export default function DatasetUploadPanel() {
                   </p>
                 </div>
               )}
+              <div className="sm:col-span-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleDownload("csv")}
+                  disabled={downloading !== null}
+                  className="px-3 py-2 text-xs font-semibold border border-[#ba0c2f] text-[#ba0c2f] rounded-lg hover:bg-[#ba0c2f] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {downloading === "csv"
+                    ? "Preparing CSV…"
+                    : "Download energy CSV"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDownload("holiday")}
+                  disabled={downloading !== null}
+                  className="px-3 py-2 text-xs font-semibold border border-[#ba0c2f] text-[#ba0c2f] rounded-lg hover:bg-[#ba0c2f] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {downloading === "holiday"
+                    ? "Preparing holiday JSON…"
+                    : "Download holiday JSON"}
+                </button>
+              </div>
             </div>
           )}
 

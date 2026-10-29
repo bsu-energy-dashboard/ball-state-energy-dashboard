@@ -1,3 +1,4 @@
+import { CAMPUS_RPCA_OUTPUTS, CAMPUS_RPCA_TERMS } from "../../../constants/campusRpcaGuide";
 import { Plus, Trash2 } from "lucide-react";
 import { MeterMultiSelect } from "../MeterMultiSelect";
 import type { ParameterFormBindings } from "../types";
@@ -57,6 +58,23 @@ export function ThresholdOptionsSection({ form }: ThresholdOptionsSectionProps) 
             {form.totalEnergyMeters.length ? `${form.totalEnergyMeters.length} campus total source meters selected.` : "Campus preset (Bethel 177/187 and Christy Woods 47/97/117)."}
           </p>
         </div>
+
+        <section aria-label="Campus RPCA run explanation" className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+          <h3 className="font-semibold">Before you generate</h3>
+          <dl className="space-y-2">
+            <div><dt className="font-medium">Dates</dt><dd>{form.startDate.replace("T", " ") || "Choose a start date"} → {form.endDate.replace("T", " ") || "Choose an end date"}</dd></div>
+            <div><dt className="font-medium">Threshold and cleaning</dt><dd>{form.threshold || "Choose a threshold"} kW · {form.cleaningMethod || "No automatic cleaning"}{form.cleaningMethod === "Polynomial" ? ` (window ${form.cleaningExtra.cleaning_window ?? 12}, sigma multiplier ${form.cleaningExtra.cleaning_n_sigma ?? 3.3})` : ""}</dd></div>
+            <div><dt className="font-medium">Comparison meter</dt><dd className="break-words">{form.meter || "Backend default"}</dd></div>
+            <div><dt className="font-medium">Campus total sources</dt><dd className="break-words">{form.totalEnergyMeters.length ? form.totalEnergyMeters.join(", ") : "Backend campus preset: Bethel BSPM177/BSPM187 and Christy Woods CWPM47/CWPM97/CWPM117."}</dd></div>
+          </dl>
+          <p>These sources define the campus total. The backend selects the dataset meters used in the RPCA matrix separately.</p>
+          <p className="font-medium">What you will see</p>
+          <ul className="list-disc space-y-2 pl-5">
+            {CAMPUS_RPCA_OUTPUTS.map(([title, description]) => <li key={title}><strong>{title}:</strong> {description}</li>)}
+          </ul>
+          <p>{CAMPUS_RPCA_TERMS}</p>
+          <p>Highlighted windows mark the ranges you choose below; they are separate from the overage-hour count. This run computes RPCA for the selected dates, so long ranges can take several minutes.</p>
+        </section>
 
         <MeterMultiSelect
           label="Meters to sum into total energy"

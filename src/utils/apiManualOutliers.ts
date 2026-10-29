@@ -17,6 +17,7 @@ export type SeasonalTemperatureRequestFields = Pick<
   | "cleaning_weekly"
   | "cleaning_imputem"
   | "manual_outliers"
+  | "manual_outlier_replacement"
   | "outlierZapMode"
 >;
 
@@ -61,7 +62,7 @@ export function buildSeasonalTemperatureBody(
 /** Attach manual_outliers to a POST body when zap mode is active. */
 export function appendManualOutliersToBody(
   body: Record<string, unknown>,
-  request: Pick<BaseRequest, "outlierZapMode" | "manual_outliers">,
+  request: Pick<BaseRequest, "outlierZapMode" | "manual_outliers" | "manual_outlier_replacement">,
 ): void {
   if (
     request.outlierZapMode &&
@@ -70,14 +71,15 @@ export function appendManualOutliersToBody(
     Object.keys(request.manual_outliers).length > 0
   ) {
     body.manual_outliers = request.manual_outliers;
+    body.manual_outlier_replacement = request.manual_outlier_replacement ?? "average";
   }
 }
 
 export function manualOutliersKeyPart(
-  request: Pick<BaseRequest, "outlierZapMode" | "manual_outliers">,
+  request: Pick<BaseRequest, "outlierZapMode" | "manual_outliers" | "manual_outlier_replacement">,
 ): unknown {
   if (!request.outlierZapMode || request.outlierZapMode === "none") {
     return null;
   }
-  return request.manual_outliers ?? null;
+  return [request.manual_outliers ?? null, request.manual_outlier_replacement ?? "average"];
 }

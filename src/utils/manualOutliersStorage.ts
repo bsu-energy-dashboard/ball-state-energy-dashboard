@@ -107,6 +107,7 @@ export function formatSavedAgo(savedAt: string): string {
 
 export function plotTypeLabel(tab: PlotType): string {
   const labels: Record<PlotType, string> = {
+    "usage-history": "Energy use",
     "time-series": "Time series",
     "forecast": "Forecast",
     "seasonal-analysis": "Seasonal",
