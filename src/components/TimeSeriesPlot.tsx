@@ -1,3 +1,4 @@
+import { formatStatistic } from "../utils/formatStatistic";
 import {
   Line,
   XAxis,
@@ -201,7 +202,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             Average use
           </h4>
           <p className="text-2xl font-bold text-[#0079A7] dark:text-[#AEDBE9]">
-            {data.statistics.mean.toFixed(2)}
+            {formatStatistic(data.statistics.mean)}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">
@@ -217,7 +218,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             Highest recorded use
           </h4>
           <p className="text-2xl font-bold text-[#ba0c2f] dark:text-red-400">
-            {data.statistics.max.toFixed(2)}
+            {formatStatistic(data.statistics.max)}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">
@@ -225,7 +226,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             Lowest recorded use
           </h4>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {data.statistics.min.toFixed(2)}
+            {formatStatistic(data.statistics.min)}
           </p>
         </div>
       </div>
@@ -433,7 +434,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                 dataKey="fullDate"
                 tickFormatter={(value) => new Date(value).toLocaleDateString()}
                 height={30}
-                stroke="#8884d8"
+                stroke="#0079A7"
                 travellerWidth={10}
                 alwaysShowText={true}
               />
@@ -596,11 +597,11 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             <span className="font-medium text-gray-700 dark:text-gray-300">
               Standard Deviation:
             </span>
-            <p className="text-gray-600 dark:text-gray-400">{data.statistics.std.toFixed(2)}</p>
+            <p className="text-gray-600 dark:text-gray-400">{formatStatistic(data.statistics.std)}</p>
           </div>
           <div>
             <span className="font-medium text-gray-700 dark:text-gray-300">Median (Q50):</span>
-            <p className="text-gray-600 dark:text-gray-400">{data.statistics.q50.toFixed(2)}</p>
+            <p className="text-gray-600 dark:text-gray-400">{formatStatistic(data.statistics.q50)}</p>
           </div>
           <div>
             <span className="font-medium text-gray-700 dark:text-gray-300">Meter:</span>

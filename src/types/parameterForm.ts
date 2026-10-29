@@ -123,6 +123,7 @@ export interface ParameterFormState {
   rpcaMaxIter: number;
   showThresholdAdvanced: boolean;
   outlierZapMode: OutlierZapMode;
+  manualOutlierReplacement: "average" | "zero";
   manualOutliers: Record<string, string[]>;
   outlierZapPreviewMeter: string;
 }

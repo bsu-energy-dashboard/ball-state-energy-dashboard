@@ -435,7 +435,7 @@ export default function ParameterForm({
               {form.thresholdMode === "fixed" && <label className="block text-sm">Energy limit (kW)<input type="number" min={0} step="any" required value={form.threshold} onChange={(e) => form.setThreshold(e.target.value)} className="mt-2 w-full rounded-lg border p-3 dark:bg-gray-700 dark:border-gray-600" /></label>}
             </div>
           )}
-          <p className="text-sm text-gray-500 dark:text-gray-400">Data preparation: {form.cleaningMethod && form.cleaningMethod !== "None" ? `${form.cleaningMethod} automatic cleaning` : selectedPlotType === "eda-plots" ? "automatic cleaning using the analysis default" : "original readings; no automatic cleaning"}. You can review or change this below.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Data preparation: {form.cleaningMethod && form.cleaningMethod !== "None" ? `${form.cleaningMethod} automatic cleaning` : "original readings; no automatic cleaning"}. You can review or change this below.</p>
         </div>
         <details className="rounded-xl border border-gray-200 p-4 dark:border-gray-700" key={`${selectedPlotType}-advanced`}>
           <summary className="cursor-pointer font-medium"><Settings2 size={16} className="mr-2 inline" aria-hidden="true" />Advanced settings <span className="text-sm font-normal text-gray-500">— optional</span></summary>

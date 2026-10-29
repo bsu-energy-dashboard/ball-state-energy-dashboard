@@ -113,6 +113,7 @@ export interface OutlierPreviewRequest {
   meter: string;
   meters_to_add?: Record<string, string[]>;
   manual_outliers?: Record<string, string[]>;
+  manual_outlier_replacement?: "average" | "zero";
   cleaning_method?: CleaningMethod | null;
   cleaning_window?: number;
   cleaning_n_sigma?: number;
@@ -269,6 +270,7 @@ export interface BaseRequest {
   rpca_tol?: number;
   rpca_max_iter?: number;
   manual_outliers?: Record<string, string[]>;
+  manual_outlier_replacement?: "average" | "zero";
   outlierZapMode?: OutlierZapMode;
 }
 
@@ -692,6 +694,7 @@ export interface StoredManualOutliers {
   startDate: string;
   endDate: string;
   cleaningMethod: string | null;
+  manual_outlier_replacement?: "average" | "zero";
   manual_outliers: Record<string, string[]>;
 }
 

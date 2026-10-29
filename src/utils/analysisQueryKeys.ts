@@ -251,6 +251,7 @@ export function outlierPreviewQueryKey(request: OutlierPreviewRequest) {
     request.meter,
     request.meters_to_add,
     request.manual_outliers,
+    request.manual_outlier_replacement,
     request.cleaning_method,
     request.cleaning_window,
     request.cleaning_n_sigma,

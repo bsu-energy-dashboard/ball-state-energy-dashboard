@@ -150,6 +150,7 @@ export interface ParameterFormBindings extends ParameterFormState {
   setRpcaMaxIter: Setter<number>;
   setShowThresholdAdvanced: Setter<boolean>;
   setOutlierZapMode: Setter<import("../../types/api").OutlierZapMode>;
+  setManualOutlierReplacement: Setter<"average" | "zero">;
   setManualOutliers: Setter<Record<string, string[]>>;
   setOutlierZapPreviewMeter: Setter<string>;
   setMeterGroups: Setter<MeterGroup[]>;

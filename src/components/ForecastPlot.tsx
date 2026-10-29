@@ -68,7 +68,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
       x: [...forecastDates, ...forecastDates.slice().reverse()],
       y: [...forecastUpperBounds, ...forecastLowerBounds.slice().reverse()],
       fill: "toself",
-      fillcolor: "rgba(0, 114, 178, 0.2)",
+      fillcolor: "rgba(0, 121, 167, 0.2)",
       line: { color: "transparent", width: 0 },
       showlegend: true,
       name: "Confidence Interval",
@@ -81,7 +81,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
       x: forecastDates,
       y: forecastValues,
       mode: "lines",
-      line: { color: "#0072B2", width: 2 },
+      line: { color: "#0079A7", width: 2 },
       name: "Forecast",
       type: "scatter",
     });
@@ -92,7 +92,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
         x: forecastDates,
         y: forecastUpperBounds,
         mode: "lines",
-        line: { color: "#0072B2", width: 1, dash: "dash" },
+        line: { color: "#0079A7", width: 1, dash: "dash" },
         name: "Upper Bound",
         type: "scatter",
       } as PlotParams["data"][0]);
@@ -101,7 +101,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
         x: forecastDates,
         y: forecastLowerBounds,
         mode: "lines",
-        line: { color: "#0072B2", width: 1, dash: "dash" },
+        line: { color: "#0079A7", width: 1, dash: "dash" },
         name: "Lower Bound",
         type: "scatter",
       } as PlotParams["data"][0]);

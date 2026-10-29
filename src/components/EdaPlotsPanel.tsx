@@ -1,3 +1,5 @@
+import PlotViewTabs from "./PlotViewTabs";
+import InteractiveAnalysisChart, { type AnalysisChartData } from "./InteractiveAnalysisChart";
 import { useEdaPlot } from "../services/api";
 import type {
   BaseRequest,
@@ -586,7 +588,7 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
     );
   }
 
-  const plotData = data as { plot_png_base64?: string; meter?: string };
+  const plotData = data as { plot_png_base64?: string; meter?: string; interactive_chart?: AnalysisChartData };
   if (plotData.plot_png_base64) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
@@ -600,11 +602,9 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
           )}
         </div>
         <EdaManualOutliersAudit data={data as ManualOutlierAuditFields} />
-        <img
-          src={`data:image/png;base64,${plotData.plot_png_base64}`}
-          alt={routeLabel}
-          className="w-full rounded-lg"
-        />
+        <PlotViewTabs image={plotData.plot_png_base64} title={routeLabel}>
+          {plotData.interactive_chart?.panels?.length ? <InteractiveAnalysisChart chart={plotData.interactive_chart} /> : undefined}
+        </PlotViewTabs>
       </div>
     );
   }

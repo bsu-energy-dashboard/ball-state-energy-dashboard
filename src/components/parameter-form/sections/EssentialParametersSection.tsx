@@ -3,7 +3,7 @@ import {
   CLEANING_METHOD_EXTRA_FIELDS,
   type CleaningMethodKey,
 } from "../../../constants/cleaningMethodExtraFields";
-import { cleaningMethodOptionsForPlot } from "../../../constants/cleaningMethods";
+import { cleaningMethodOptionsForPlot, CLEANING_DESCRIPTIONS, defaultCleaningMethod } from "../../../constants/cleaningMethods";
 import type { CleaningMethod } from "../../../types/api";
 import type { ParameterFormBindings } from "../types";
 
@@ -157,10 +157,7 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
                 >
                   <Wand2 className="mr-2 inline h-4 w-4 text-[#0079A7] dark:text-[#AEDBE9]" aria-hidden="true" />Data cleaning
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">
-                    {form.selectedPlotType === "threshold-detection" ||
-                    form.selectedPlotType === "rpca-analysis"
-                      ? "Polynomial recommended for multi-meter overage"
-                      : "Optional: Remove outliers and anomalies"}
+                    Starting choice for this view: {defaultCleaningMethod(form.selectedPlotType)}
                   </span>
                 </label>
                 {(form.selectedPlotType === "threshold-detection" ||
@@ -186,6 +183,8 @@ export function EssentialParametersSection({ form, section = "all" }: EssentialP
                     ),
                   )}
                 </select>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{CLEANING_DESCRIPTIONS[form.cleaningMethod]}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">A high reading can be real. Use the preview to review changes before running your analysis.</p>
               </div>
               {(form.selectedPlotType === "threshold-detection" ||
                 form.selectedPlotType === "rpca-analysis") &&

@@ -412,6 +412,7 @@ export function buildBaseRequest({
     }
     if (Object.keys(pruned).length > 0) {
       params.manual_outliers = pruned;
+      params.manual_outlier_replacement = state.manualOutlierReplacement ?? "average";
       params.outlierZapMode = state.outlierZapMode;
     }
   }

@@ -1,3 +1,4 @@
+import { defaultCleaningMethod } from "../constants/cleaningMethods";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
 import type { BaseRequest, PlotType, FormField, EdaRoute, OutlierZapMode } from "../types/api";
@@ -51,7 +52,7 @@ export function useParameterForm({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [meter, setMeter] = useState("");
-  const [cleaningMethod, setCleaningMethod] = useState("");
+  const [cleaningMethod, setCleaningMethod] = useState<string>(defaultCleaningMethod(selectedPlotType));
   const [cleaningExtra, setCleaningExtra] = useState<Record<string, number>>({
     cleaning_window: 12,
     cleaning_n_sigma: 3,
@@ -234,6 +235,7 @@ export function useParameterForm({
     THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter,
   );
   const [showThresholdAdvanced, setShowThresholdAdvanced] = useState(false);
+  const [manualOutlierReplacement, setManualOutlierReplacement] = useState<"average" | "zero">("average");
   const [outlierZapMode, setOutlierZapMode] = useState<OutlierZapMode>("none");
   const [manualOutliers, setManualOutliers] = useState<Record<string, string[]>>(
     {},
@@ -301,7 +303,7 @@ export function useParameterForm({
       setCleaningDaily(false);
       setCleaningWeekly(false);
     } else {
-      setCleaningMethod("");
+      setCleaningMethod(defaultCleaningMethod(selectedPlotType));
       setCleaningExtra({
         cleaning_window: 12,
         cleaning_n_sigma: 3,
@@ -417,6 +419,7 @@ export function useParameterForm({
     setRpcaMaxIter(THRESHOLD_NUMERIC_DEFAULTS.rpca_max_iter);
     setShowThresholdAdvanced(false);
     setOutlierZapMode("none");
+    setManualOutlierReplacement("average");
     setManualOutliers({});
     setOutlierZapPreviewMeter("");
   }, [resetSignal, meterList?.meters, meterList?.time_range, selectedPlotType]);
@@ -426,7 +429,7 @@ export function useParameterForm({
     setStartDate(initialValues.start_date);
     setEndDate(initialValues.end_date);
     setMeter(initialValues.meter);
-    setCleaningMethod(initialValues.cleaning_method ?? "");
+    setCleaningMethod(initialValues.cleaning_method ?? defaultCleaningMethod(selectedPlotType));
     if (initialValues.cleaning_daily !== undefined) {
       setCleaningDaily(initialValues.cleaning_daily);
     }
@@ -761,6 +764,7 @@ export function useParameterForm({
     if (initialValues.rpca_max_iter !== undefined) {
       setRpcaMaxIter(initialValues.rpca_max_iter);
     }
+    setManualOutlierReplacement(initialValues.manual_outlier_replacement ?? "average");
     if (initialValues.outlierZapMode) {
       setOutlierZapMode(initialValues.outlierZapMode);
     }
@@ -1043,6 +1047,7 @@ export function useParameterForm({
     rpcaMaxIter,
     showThresholdAdvanced,
     outlierZapMode,
+    manualOutlierReplacement,
     manualOutliers,
     outlierZapPreviewMeter,
     meterGroups,
@@ -1157,6 +1162,7 @@ export function useParameterForm({
     setRpcaMaxIter,
     setShowThresholdAdvanced,
     setOutlierZapMode,
+    setManualOutlierReplacement,
     setManualOutliers,
     setOutlierZapPreviewMeter,
     setMeterGroups,
