@@ -113,6 +113,7 @@ export default function SeasonalAnalysisPlot({
 
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Compare seasons and times when classes are in session. In the box charts, each box contains the middle half of readings; the line inside marks the middle reading.</p>
       <ManualOutliersAudit
         applied={data.manual_outliers_applied}
         skipped={data.manual_outliers_skipped}
@@ -120,7 +121,7 @@ export default function SeasonalAnalysisPlot({
       {data.plot_png_base64 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-            Seasonal Analysis Plot - {data.meter}
+            Energy use across the year — {data.meter}
           </h3>
           <img
             src={`data:image/png;base64,${data.plot_png_base64}`}
@@ -133,7 +134,7 @@ export default function SeasonalAnalysisPlot({
      {!data.plot_png_base64 && (
        <div className="bg-white rounded-lg shadow-md p-6">
        <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-         Seasonal Analysis - {data.meter}
+         Seasonal comparison — {data.meter}
        </h3>
        <div className="w-full overflow-x-auto">
          <VictoryChart
@@ -243,7 +244,8 @@ export default function SeasonalAnalysisPlot({
      )}
 
       {/* Statistics Table */}
-      <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
+      <details className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+        <summary className="mb-3 cursor-pointer font-medium">Detailed readings and statistics</summary>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -251,10 +253,10 @@ export default function SeasonalAnalysisPlot({
                 Season
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Session Status
+                Class schedule
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mean
+                Average
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Median
@@ -304,7 +306,7 @@ export default function SeasonalAnalysisPlot({
             ))}
           </tbody>
         </table>
-      </div>
+      </details>
 
       {/* Date Range Info */}
       <div className="bg-white rounded-lg shadow-md p-6">

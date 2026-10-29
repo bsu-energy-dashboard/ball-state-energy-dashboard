@@ -42,7 +42,7 @@ export interface ParameterFormBindings extends ParameterFormState {
   setCleaningExtra: Setter<Record<string, number>>;
   setCleaningDaily: Setter<boolean>;
   setCleaningWeekly: Setter<boolean>;
-  setSmoothingMethod: Setter<"ma" | "hp">;
+  setSmoothingMethod: Setter<"" | "ma" | "hp">;
   setSmoothingWindow: Setter<number>;
   setHpLambda: Setter<number>;
   setForecast: Setter<boolean>;

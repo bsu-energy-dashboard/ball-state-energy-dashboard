@@ -89,7 +89,7 @@ export default function SimpleRpcaPanel({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center transition-colors">
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          No Campus RPCA result yet.
+          No Campus overview result yet.
         </p>
       </div>
     );
@@ -118,7 +118,7 @@ export default function SimpleRpcaPanel({
           />
         </svg>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Running Campus RPCA…
+          Running Campus overview…
         </p>
       </div>
     );
@@ -149,7 +149,7 @@ export default function SimpleRpcaPanel({
         <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-              Campus RPCA
+              Campus overview
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {data.meter} compared against the RPCA low-rank baseline.
@@ -163,7 +163,7 @@ export default function SimpleRpcaPanel({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <SummaryCard label="Rows" value={data.summary.data_hours} />
           <SummaryCard label="Meters" value={data.summary.data_meters} />
-          <SummaryCard label="Overage Hours" value={data.summary.overage_hours ?? "No data"} />
+          <SummaryCard label="Hours above your limit" value={data.summary.overage_hours ?? "No data"} />
           <SummaryCard
             label="Highlighted Windows"
             value={data.summary.overage_window_count}
@@ -185,9 +185,9 @@ export default function SimpleRpcaPanel({
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-8 transition-colors">
-        <PngPlot title="Energy Deviation Events" base64={data.heatmap_plot_png_base64} />
-        <PngPlot title="Actual vs LMatrix" base64={data.series_plot_png_base64} />
-        <PngPlot title="Campus Total vs Threshold" base64={data.overage_plot_png_base64} />
+        <PngPlot title="Unusual energy use" base64={data.heatmap_plot_png_base64} />
+        <PngPlot title="Actual use vs estimated usual use" base64={data.series_plot_png_base64} />
+        <PngPlot title="Campus total vs your limit" base64={data.overage_plot_png_base64} />
       </div>
     </div>
   );

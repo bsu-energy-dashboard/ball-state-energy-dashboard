@@ -272,6 +272,7 @@ export function analysisQueryKey(
   if (!request) return null;
 
   switch (plotType) {
+    case "usage-history":
     case "time-series":
     case "forecast":
       return timeSeriesQueryKey(request);

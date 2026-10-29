@@ -59,7 +59,7 @@ export function useParameterForm({
   });
   const [cleaningDaily, setCleaningDaily] = useState(false);
   const [cleaningWeekly, setCleaningWeekly] = useState(false);
-  const [smoothingMethod, setSmoothingMethod] = useState<"ma" | "hp">("ma");
+  const [smoothingMethod, setSmoothingMethod] = useState<"" | "ma" | "hp">("");
   const [smoothingWindow, setSmoothingWindow] = useState(7);
   const [hpLambda, setHpLambda] = useState(1600);
   const [forecast, setForecast] = useState(false);
@@ -283,8 +283,13 @@ export function useParameterForm({
   );
 
   useEffect(() => {
-    setStartDate("");
-    setEndDate("");
+    const range = meterList?.time_range;
+    if (range?.start && range.end) {
+      const preset = selectedPlotType === "rpca-analysis" || selectedPlotType === "threshold-detection" ? "week" : selectedPlotType === "usage-history" ? "month" : "year";
+      const dates = computeDatePreset(preset, range.end);
+      setStartDate(new Date(dates.startDate) < new Date(range.start) ? range.start.slice(0, 16) : dates.startDate);
+      setEndDate(dates.endDate);
+    } else { setStartDate(""); setEndDate(""); }
     setMeter("");
     if (isRpcaWorkflow(selectedPlotType)) {
       setCleaningMethod("Polynomial");
@@ -305,12 +310,12 @@ export function useParameterForm({
       setCleaningDaily(false);
       setCleaningWeekly(false);
     }
-    setSmoothingMethod("ma");
+    setSmoothingMethod("");
     setSmoothingWindow(7);
     setHpLambda(1600);
-    setForecast(false);
+    setForecast(selectedPlotType === "time-series");
     setAssessment(false);
-    setTestHours(240);
+    setTestHours(168);
     setForecastIntervalType("two-sided");
     setForecastIntervalWidth(0.95);
     setForecastModel("Prophet");
@@ -377,9 +382,6 @@ export function useParameterForm({
     setEdaAnnotated(true);
     setEdaSmoothingMethod("hp");
     setEdaSmoothingWindow(200);
-    const resetAnalysis = defaultAnalysisWindow(meterList?.time_range);
-    const resetContribution = defaultContributionWindow();
-    const resetPlot = defaultPlotWindow();
     setThresholdMode(THRESHOLD_MODE_DEFAULT);
     setThreshold(selectedPlotType === "rpca-analysis" ? "22000" : "");
     setTotalEnergyName("totalenergy");
@@ -394,12 +396,12 @@ export function useParameterForm({
         : [...(meterList?.meters ?? []), ...groupNames],
     );
     setSeriesMeters([]);
-    setAnalysisWindowStart(resetAnalysis.start);
-    setAnalysisWindowEnd(resetAnalysis.end);
-    setContributionWindowStart(resetContribution.start);
-    setContributionWindowEnd(resetContribution.end);
-    setPlotWindowStart(resetPlot.start);
-    setPlotWindowEnd(resetPlot.end);
+    setAnalysisWindowStart("");
+    setAnalysisWindowEnd("");
+    setContributionWindowStart("");
+    setContributionWindowEnd("");
+    setPlotWindowStart("");
+    setPlotWindowEnd("");
     setContributionsTopN(THRESHOLD_NUMERIC_DEFAULTS.contributions_top_n);
     setEventContributionsTopN(
       THRESHOLD_NUMERIC_DEFAULTS.event_contributions_top_n,
@@ -439,7 +441,7 @@ export function useParameterForm({
         cleaning_interval_width: initialValues.cleaning_interval_width,
       }),
     }));
-    setSmoothingMethod(initialValues.smoothing_method ?? "ma");
+    setSmoothingMethod(initialValues.smoothing_method ?? "");
     setSmoothingWindow(initialValues.smoothing_window ?? 7);
     setHpLambda(
       initialValues.smoothing_method === "hp"
@@ -813,12 +815,6 @@ export function useParameterForm({
     }
   }, [selectedPlotType, meter, outlierZapPreviewMeter]);
 
-  useEffect(() => {
-    if (!isRpcaWorkflow(selectedPlotType)) return;
-    const windows = defaultAnalysisWindow(meterList?.time_range);
-    setAnalysisWindowStart((prev) => prev || windows.start);
-    setAnalysisWindowEnd((prev) => prev || windows.end);
-  }, [selectedPlotType, meterList?.time_range]);
   const addMeterGroup = () => {
     const newId = `group-${Date.now()}`;
     const updatedGroups = [
@@ -922,10 +918,10 @@ export function useParameterForm({
 
   const availableDateRange = meterList?.time_range;
   const minDate = availableDateRange?.start
-    ? new Date(availableDateRange.start).toISOString().slice(0, 16)
+    ? availableDateRange.start.replace(" ", "T").slice(0, 16)
     : "";
   const maxDate = availableDateRange?.end
-    ? new Date(availableDateRange.end).toISOString().slice(0, 16)
+    ? availableDateRange.end.replace(" ", "T").slice(0, 16)
     : "";
 
   const applyDatePreset = useCallback(
@@ -934,10 +930,10 @@ export function useParameterForm({
         preset,
         availableDateRange?.end,
       );
-      setStartDate(s);
+      setStartDate(availableDateRange?.start && new Date(s) < new Date(availableDateRange.start) ? availableDateRange.start.replace(" ", "T").slice(0, 16) : s);
       setEndDate(e);
     },
-    [availableDateRange?.end],
+    [availableDateRange?.start, availableDateRange?.end],
   );
 
   return {

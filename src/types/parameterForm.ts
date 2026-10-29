@@ -25,7 +25,7 @@ export interface ParameterFormState {
   cleaningExtra: Record<string, number>;
   cleaningDaily: boolean;
   cleaningWeekly: boolean;
-  smoothingMethod: "ma" | "hp";
+  smoothingMethod: "" | "ma" | "hp";
   smoothingWindow: number;
   hpLambda: number;
   forecast: boolean;

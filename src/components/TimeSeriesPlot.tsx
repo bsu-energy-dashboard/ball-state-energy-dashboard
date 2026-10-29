@@ -89,7 +89,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-          Please submit the form to view time series data
+          Choose your settings above and select Show results.
         </p>
       </div>
     );
@@ -168,43 +168,20 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
   }
 
   const chartData = data.time_series
-    .map((item) => {
-      const date = new Date(item.date);
-      return {
-        date: date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        }),
-        fullDate: item.date,
-        smoothed: item.smoothed,
-        ...Object.fromEntries(
-          Object.entries(item).filter(
-            ([key, value]) =>
-              key !== "date" && key !== "smoothed" && typeof value === "number"
-          )
-        ),
-      };
+    .filter((item) => {
+      const timestamp = new Date(item.date).getTime();
+      return (!submitParams?.start_date || timestamp >= new Date(submitParams.start_date).getTime()) &&
+        (!submitParams?.end_date || timestamp <= new Date(submitParams.end_date).getTime());
     })
-    .sort(
-      (a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime()
-    );
+    .map((item) => ({
+      fullDate: item.date,
+      recorded: typeof item[data.meter] === "number" ? item[data.meter] : item.value,
+      smoothed: item.smoothed,
+    }))
+    .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
 
-  const numericKeys = new Set<string>();
-  data.time_series.forEach((item) => {
-    Object.keys(item).forEach((key) => {
-      if (
-        key !== "date" &&
-        key !== "smoothed" &&
-        typeof item[key] === "number"
-      ) {
-        numericKeys.add(key);
-      }
-    });
-  });
-
-  const firstTimestamp = data.time_series[0]?.date || 0;
-  const lastTimestamp =
-    data.time_series[data.time_series.length - 1]?.date || 0;
+  const firstTimestamp = chartData[0]?.fullDate || 0;
+  const lastTimestamp = chartData[chartData.length - 1]?.fullDate || 0;
   const daysDiff = Math.ceil(
     (new Date(lastTimestamp).getTime() - new Date(firstTimestamp).getTime()) /
       (1000 * 60 * 60 * 24)
@@ -221,7 +198,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">
           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Mean Consumption
+            Average use
           </h4>
           <p className="text-2xl font-bold text-[#0079A7] dark:text-[#AEDBE9]">
             {data.statistics.mean.toFixed(2)}
@@ -237,7 +214,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">
           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Peak Consumption
+            Highest recorded use
           </h4>
           <p className="text-2xl font-bold text-[#ba0c2f] dark:text-red-400">
             {data.statistics.max.toFixed(2)}
@@ -245,7 +222,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-colors">
           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            Min Consumption
+            Lowest recorded use
           </h4>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">
             {data.statistics.min.toFixed(2)}
@@ -420,14 +397,15 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       {/* Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
         <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
-          Time Series Plot - {data.meter}
+          Recorded energy use — {data.meter}
         </h3>
         <div className="h-full w-full">
           <ResponsiveContainer width="100%" aspect={2}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
-                dataKey="date"
+                dataKey="fullDate"
+                tickFormatter={(value) => new Date(value).toLocaleDateString()}
                 tick={{ fontSize: 12 }}
                 angle={-45}
                 textAnchor="end"
@@ -444,7 +422,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                 tick={{ fontSize: 12 }}
                 width={80}
                 label={{
-                  value: "Energy Consumption (kWh)",
+                  value: "Use (dataset units)",
                   angle: -90,
                   position: "insideBottomLeft",
                   offset: 10,
@@ -452,7 +430,8 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                 domain={["dataMin - 0.5", "dataMax + 0.5"]}
               />
               <Brush
-                dataKey="date"
+                dataKey="fullDate"
+                tickFormatter={(value) => new Date(value).toLocaleDateString()}
                 height={30}
                 stroke="#8884d8"
                 travellerWidth={10}
@@ -464,31 +443,19 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
                   `${value.toFixed(2)}`,
                   name === "smoothed" ? "Smoothed" : name,
                 ]}
-                labelFormatter={(label) => `Date: ${label}`}
+                labelFormatter={(label) => new Date(label).toLocaleString()}
               />
               <Legend />
-              <Line
+              {submitParams?.smoothing_method && <Line
                 type="monotone"
                 dataKey="smoothed"
                 stroke="#0079A7"
                 strokeWidth={2}
                 dot={false}
-                name="Smoothed"
-              />
-              {Array.from(numericKeys).map((key, index) => {
-                const colors = ["#ba0c2f", "#10b981"];
-                return (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={1.5}
-                    dot={false}
-                    name={key}
-                  />
-                );
-              })}
+                name="Smoothed use"
+              />}
+              <Line type="monotone" dataKey="recorded" stroke="#ba0c2f"
+                strokeWidth={1.5} dot={false} name="Recorded use" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -622,10 +589,8 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
       </div>
 
       {/* Statistics Details */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-        <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
-          Statistical Summary
-        </h3>
+      <details className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
+        <summary className="cursor-pointer font-medium mb-4">Technical details</summary>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -642,7 +607,7 @@ export default function TimeSeriesPlot({ submitParams }: TimeSeriesPlotProps) {
             <p className="text-gray-600 dark:text-gray-400">{data.meter}</p>
           </div>
         </div>
-      </div>
+      </details>
     </div>
   );
 }

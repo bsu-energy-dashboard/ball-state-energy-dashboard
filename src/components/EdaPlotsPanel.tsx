@@ -366,12 +366,12 @@ function EdaFooter({
 }
 
 const EDA_ROUTE_LABELS: Record<string, string> = {
-  "trend-tests": "Trend Tests",
-  "seasonality-tests": "Seasonality Tests",
+  "trend-tests": "Is energy use going up or down?",
+  "seasonality-tests": "Daily and weekly patterns",
   "unit-root-tests": "Unit Root Tests",
-  "seasonal-decompose": "Seasonal Decomposition",
+  "seasonal-decompose": "Long-term and repeating patterns",
   "autocorr": "Autocorrelation (ACF)",
-  "annotated-timeseries": "Annotated Time Series",
+  "annotated-timeseries": "Energy use around holidays and weekends",
 };
 
 export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
@@ -388,7 +388,7 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
           </svg>
         </div>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Select parameters and click <strong>Generate Analysis</strong> to view EDA plots.
+          Choose a location and dates, then click <strong>Show results</strong>.
         </p>
       </div>
     );
@@ -436,12 +436,17 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
             {routeLabel}
           </h2>
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-            {st.n_points.toLocaleString()} points · HAC {st.use_hac ? "on" : "off"}
+            {st.n_points.toLocaleString()} readings
           </span>
         </div>
 
         <EdaManualOutliersAudit data={data} />
 
+        <div className="mb-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+          {Object.entries(st.harmonic_tests).map(([period, result]) => <p key={period}>{period === "24" ? "Daily pattern" : period === "168" ? "Weekly pattern" : `${period}-hour pattern`}: {result.significant_at_0_05 ? "the data shows evidence of a repeating pattern." : "this check did not find clear evidence of a repeating pattern."}</p>)}
+          <p>These checks describe your selected dates. They do not explain what caused a pattern.</p>
+        </div>
+        <details><summary className="mb-3 cursor-pointer text-sm font-medium">Technical details</summary>
         <div className="space-y-4">
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
             Harmonic F-tests · periods [{st.periods.join(", ")}]
@@ -463,6 +468,8 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
 
           <OcsbSection ocsb={st.ocsb} />
         </div>
+
+        </details>
 
         <EdaFooter meter={data.meter} dateRange={data.date_range} />
       </div>
@@ -554,16 +561,25 @@ export default function EdaPlotsPanel({ submitParams }: EdaPlotsPanelProps) {
           <div className="h-1 w-8 bg-[#0079A7] rounded" />
           <h2 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9]">{routeLabel}</h2>
           <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-            {trend_tests.n_points.toLocaleString()} data points · {trend_tests.seasonal_periods} seasonal periods
+            {trend_tests.n_points.toLocaleString()} readings
           </span>
         </div>
 
         <EdaManualOutliersAudit data={data} />
 
+        <p className="mb-4 text-sm leading-6 text-gray-700 dark:text-gray-200">
+          {trend_tests.seasonal_kendall.h
+            ? `After accounting for repeating cycles, this check found evidence that energy use is ${trend_tests.seasonal_kendall.trend === "increasing" ? "going up" : trend_tests.seasonal_kendall.trend === "decreasing" ? "going down" : "changing"}.`
+            : "This check did not find clear evidence that energy use is consistently going up or down after accounting for repeating cycles."}
+          {" "}This describes the selected period and does not predict future use.
+        </p>
+        <details><summary className="mb-3 cursor-pointer text-sm font-medium">Technical details</summary>
         <div className="space-y-4">
           <TrendTestRow label="Mann-Kendall Test" result={trend_tests.mann_kendall} />
           <TrendTestRow label="Seasonal Kendall Test" result={trend_tests.seasonal_kendall} />
         </div>
+
+        </details>
 
         <EdaFooter meter={data.meter} dateRange={data.date_range} />
       </div>

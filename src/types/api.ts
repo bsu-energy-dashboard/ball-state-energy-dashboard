@@ -645,6 +645,7 @@ export interface SimpleRpcaResponse {
 
 // Plot Types
 export type PlotType =
+  | "usage-history"
   | "time-series"
   | "forecast"
   | "seasonal-analysis"

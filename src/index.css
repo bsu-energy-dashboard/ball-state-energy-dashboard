@@ -9,3 +9,19 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Local, decorative energy flow: no external animation requests. */
+@keyframes energy-flow {
+  to { stroke-dashoffset: -100; }
+}
+.energy-flow { animation: energy-flow 6s linear 1; }
+@media (prefers-reduced-motion: reduce) {
+  .energy-flow { animation: none; }
+}
+.analysis-form input:not([type="checkbox"]):not([type="radio"]),
+.analysis-form select { min-height: 44px; }
+.analysis-form input, .analysis-form select { max-width: 100%; }
+button:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 2px solid #0079A7;
+  outline-offset: 3px;
+}

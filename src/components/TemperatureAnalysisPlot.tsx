@@ -115,6 +115,7 @@ export default function TemperatureAnalysisPlot({
 
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Compare energy use across outdoor temperatures. A relationship does not prove that temperature caused a change. In the box charts, each box contains the middle half of readings.</p>
       <ManualOutliersAudit
         applied={data.manual_outliers_applied}
         skipped={data.manual_outliers_skipped}
@@ -122,7 +123,7 @@ export default function TemperatureAnalysisPlot({
       {data.plot_png_base64 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-            Temperature Analysis Plot - {data.meter}
+            Energy use and outdoor temperature — {data.meter}
           </h3>
           <img
             src={`data:image/png;base64,${data.plot_png_base64}`}
@@ -135,7 +136,7 @@ export default function TemperatureAnalysisPlot({
      {!data.plot_png_base64 && (
        <div className="bg-white rounded-lg shadow-md p-6">
        <h3 className="text-xl font-semibold text-[#0079A7] mb-4">
-         Temperature Analysis - {data.meter}
+         Temperature comparison — {data.meter}
        </h3>
        <div className="w-full overflow-x-auto">
          <VictoryChart
@@ -245,7 +246,8 @@ export default function TemperatureAnalysisPlot({
      )}
 
       {/* Statistics Table */}
-      <div className="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
+      <details className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+        <summary className="mb-3 cursor-pointer font-medium">Detailed readings and statistics</summary>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -253,10 +255,10 @@ export default function TemperatureAnalysisPlot({
                 Temperature Range
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Session Status
+                Class schedule
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mean
+                Average
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Median
@@ -306,7 +308,7 @@ export default function TemperatureAnalysisPlot({
             ))}
           </tbody>
         </table>
-      </div>
+      </details>
       {/* Date Range Info */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-xl font-semibold text-[#0079A7] mb-4">

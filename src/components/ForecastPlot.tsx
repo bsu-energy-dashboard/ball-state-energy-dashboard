@@ -220,8 +220,14 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
       {assessment && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
           <h3 className="text-xl font-semibold text-[#0079A7] dark:text-[#AEDBE9] mb-4">
-            Assessment Metrics
+            How close were the predictions?
           </h3>
+          <p className="mb-4 text-gray-600 dark:text-gray-300">
+            Predictions differed from recorded use by {assessment.mae.toFixed(2)} dataset units on average
+            across {assessment.n_points} checked readings. Smaller differences mean closer predictions.
+          </p>
+          <details>
+            <summary className="cursor-pointer mb-4">Technical details</summary>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -274,6 +280,7 @@ export default function ForecastPlot({ submitParams, forecastData, timeSeriesDat
               </p>
             </div>
           </div>
+          </details>
         </div>
       )}
 

@@ -88,8 +88,16 @@ export function buildBaseRequest({
     }
   }
 
-  if (selectedPlotType === "time-series" && (state.forecast || state.assessment)) {
-    params.forecast = state.forecast;
+  if (selectedPlotType === "time-series") {
+    if (!Number.isInteger(state.testHours) || state.testHours < 1 || state.testHours > 8760) {
+      toast.error("Choose a prediction period between 1 and 8,760 whole hours.");
+      return { ok: false };
+    }
+    if (state.assessment && state.testHours >= (new Date(state.endDate).getTime() - new Date(state.startDate).getTime()) / 3600000) {
+      toast.error("Choose a shorter checking period so some history remains for learning.");
+      return { ok: false };
+    }
+    params.forecast = !state.assessment;
     params.assessment = state.assessment;
     params.test_hours = state.testHours;
     params.model = state.forecastModel;
@@ -408,5 +416,6 @@ export function buildBaseRequest({
     }
   }
 
+  if (selectedPlotType === "usage-history") { params.forecast = false; params.assessment = false; }
   return { ok: true, params };
 }

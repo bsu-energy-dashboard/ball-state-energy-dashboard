@@ -1,3 +1,4 @@
+import { Database } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import {
@@ -147,14 +148,15 @@ export default function DatasetUploadPanel() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 transition-colors border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm mb-6 transition-colors border border-gray-200 dark:border-gray-700">
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-6 py-4 text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="h-1 w-8 bg-[#ba0c2f] rounded" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0079A7]/10 text-[#0079A7] dark:text-[#AEDBE9]"><Database size={20} aria-hidden="true" /></span>
           <div>
             <h2 className="text-lg font-semibold text-[#ba0c2f] dark:text-[#AEDBE9]">
               Dataset
