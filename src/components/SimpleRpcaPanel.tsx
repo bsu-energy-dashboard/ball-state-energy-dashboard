@@ -1,3 +1,5 @@
+import PlotViewTabs from "./PlotViewTabs";
+import CampusInteractivePlot from "./CampusInteractivePlot";
 import { isAxiosError } from "axios";
 import { useSimpleRpca } from "../services/api";
 import type { BaseRequest } from "../types/api";
@@ -19,21 +21,6 @@ function SummaryCard({
       <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 mt-1">
         {value}
       </p>
-    </div>
-  );
-}
-
-function PngPlot({ title, base64 }: { title: string; base64: string }) {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
-        {title}
-      </h3>
-      <img
-        src={`data:image/png;base64,${base64}`}
-        alt={title}
-        className="w-full rounded-lg border border-gray-200 dark:border-gray-600"
-      />
     </div>
   );
 }
@@ -118,7 +105,7 @@ export default function SimpleRpcaPanel({
           />
         </svg>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Running Campus overview…
+          Loading saved Campus overview…
         </p>
       </div>
     );
@@ -152,7 +139,7 @@ export default function SimpleRpcaPanel({
               Campus overview
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {data.meter} compared against the RPCA low-rank baseline.
+              {data.meter}: recorded versus usual use from the saved {data.summary.saved_year} results.
             </p>
           </div>
           <div className="rounded-md bg-[#0079A7]/10 px-3 py-2 text-sm font-semibold text-[#0079A7] dark:bg-[#AEDBE9]/10 dark:text-[#AEDBE9]">
@@ -161,33 +148,38 @@ export default function SimpleRpcaPanel({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <SummaryCard label="Rows" value={data.summary.data_hours} />
-          <SummaryCard label="Meters" value={data.summary.data_meters} />
+          <SummaryCard label="Hourly readings" value={data.summary.data_hours} />
+          <SummaryCard label="Buildings" value={data.summary.data_meters} />
           <SummaryCard label="Hours above your limit" value={data.summary.overage_hours ?? "No data"} />
           <SummaryCard
-            label="Highlighted Windows"
-            value={data.summary.overage_window_count}
+            label="Week starts"
+            value={data.date_range.start.slice(0,10)}
           />
         </div>
         {data.warnings?.map((warning) => (
           <p key={warning} role="status" className="mt-3 text-sm text-gray-700 dark:text-gray-200">{warning}</p>
         ))}
         <details className="mt-4 border-t border-gray-200 pt-3 text-sm dark:border-gray-600">
-          <summary className="cursor-pointer font-medium">Data coverage and model</summary>
+          <summary className="cursor-pointer font-medium">Saved data and coverage</summary>
           <div className="mt-3 space-y-2 break-words">
             <p>Campus total: {data.summary.valid_total_hours} complete hours; {data.summary.missing_total_hours} missing hours.</p>
-            <p>Missing values filled in the RPCA matrix: {data.summary.imputed_value_count}. Campus totals use original readings.</p>
-            <p>Sources: {data.total_meters.join(", ")}</p>
-            <p>Excluded empty meters: {data.summary.excluded_empty_meters?.join(", ") || "None"}</p>
-            <p>{data.summary.converged ? "Converged" : "Iteration limit reached"} after {data.summary.iterations} iterations.</p>
+            <p>Week: {data.date_range.start} through {data.date_range.end}.</p>
+            <p>Campus total sources: {data.total_meters.join(", ")}</p>
+            <p>Building readings, usual usage, and deviations are loaded from saved files. No model is fitted on this request.</p>
           </div>
         </details>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-8 transition-colors">
-        <PngPlot title="Unusual energy use" base64={data.heatmap_plot_png_base64} />
-        <PngPlot title="Actual use vs estimated usual use" base64={data.series_plot_png_base64} />
-        <PngPlot title="Campus total vs your limit" base64={data.overage_plot_png_base64} />
+        <PlotViewTabs title="Unusual energy use" image={data.heatmap_plot_png_base64}>
+          {data.interactive_data && <CampusInteractivePlot result={data} kind="heatmap" />}
+        </PlotViewTabs>
+        <PlotViewTabs title="Actual use vs estimated usual use" image={data.series_plot_png_base64}>
+          {data.interactive_data && <CampusInteractivePlot result={data} kind="series" />}
+        </PlotViewTabs>
+        <PlotViewTabs title={`Campus total vs limit — ${data.summary.overage_hours ?? "Unknown"} hours above limit`} image={data.overage_plot_png_base64}>
+          {data.interactive_data && <CampusInteractivePlot result={data} kind="overage" />}
+        </PlotViewTabs>
       </div>
     </div>
   );
