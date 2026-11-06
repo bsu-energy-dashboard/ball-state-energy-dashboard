@@ -1,5 +1,5 @@
 import Plot from "react-plotly.js";
-import type { Data } from "plotly.js";
+import type { Data, PlotData } from "plotly.js";
 import type { SimpleRpcaResponse } from "../types/api";
 import { useDarkMode } from "../hooks/use-darkmode";
 import { BSU_CHART, chartAxis, chartColors, chartTheme } from "../constants/chartTheme";
@@ -13,14 +13,14 @@ export default function CampusInteractivePlot({ result, kind }: {
   if (!values) return null;
   const colors = chartColors(darkMode);
   const x = values.timestamps;
-  const line = (name: string, y: (number | null)[], color: string): Data => ({
+  const line = (name: string, y: (number | null)[], color: string): Partial<PlotData> => ({
     type: "scatter", mode: "lines", x, y, name, connectgaps: false,
     line: { color, width: 2 }, hovertemplate: "%{x|%b %d, %H:%M}<br>%{y:,.2f}<extra>%{fullData.name}</extra>",
   });
   const traces: Data[] = kind === "heatmap" ? [{
     type: "heatmap", x, y: values.buildings, z: values.deviations,
     colorscale: [[0, BSU_CHART.blue], [0.5, "#FFFFFF"], [1, BSU_CHART.red]],
-    zmin: -300, zmax: 300, zmid: 0, colorbar: { title: { text: "Deviation" } },
+    zmin: -300, zmax: 300, colorbar: { title: { text: "Deviation" } },
     hovertemplate: "%{y}<br>%{x|%b %d, %H:%M}<br>Deviation: %{z:,.2f}<extra></extra>",
   }] : kind === "series" ? [
     line("Recorded use", values.actual, colors[0]),
