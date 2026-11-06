@@ -1,3 +1,4 @@
+import CampusWeekForm from "./CampusWeekForm";
 import { EXPLORATION_OPTIONS, isExploration } from "../constants/exploration";
 import CampusEnergyIllustration from "./CampusEnergyIllustration";
 import { useState, type ComponentType } from "react";
@@ -220,7 +221,7 @@ export default function Dashboard() {
                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{EXPLORATION_OPTIONS.find((item) => item.value === explorationChoice)?.description}</p>
               </section>
             )}
-            <ParameterForm
+            {selectedPlotType === "rpca-analysis" ? <CampusWeekForm key={`campus-${resetFormSignal}`} onSubmit={handleSubmit} isLoading={isAnalysisLoading} initialValues={activeSubmitParams} /> : <ParameterForm
               key={isExploration(selectedPlotType) ? explorationChoice : selectedPlotType}
               onSubmit={handleSubmit}
               isLoading={isAnalysisLoading}
@@ -229,7 +230,7 @@ export default function Dashboard() {
               selectedPlotType={selectedPlotType}
               formPatch={pendingFormPatch}
               explorationRoute={selectedPlotType === "eda-plots" ? EXPLORATION_OPTIONS.find((item) => item.value === explorationChoice)?.route : undefined}
-            />
+            />}
 
             {(selectedPlotType === "time-series" || selectedPlotType === "usage-history") && (
               <TimeSeriesPlot submitParams={activeSubmitParams} />

@@ -221,7 +221,8 @@ export function overageThresholdQueryKey(request: BaseRequest) {
 
 export function simpleRpcaQueryKey(request: BaseRequest) {
   return [
-    "simple-rpca",
+    "simple-rpca-saved-week-interactive-v1",
+    request.saved_year,
     request.start_date,
     request.end_date,
     request.meter,

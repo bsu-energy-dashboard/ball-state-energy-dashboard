@@ -141,6 +141,7 @@ export interface OutlierPreviewResponse {
 }
 
 export interface BaseRequest {
+  saved_year?: number;
   start_date: string;
   end_date: string;
   meter: string;
@@ -613,6 +614,8 @@ export interface OverageThresholdResponse {
 }
 
 export interface SimpleRpcaSummary {
+  saved_year?: number;
+  source?: string;
   data_hours: number;
   data_meters: number;
   data_start: string;
@@ -626,12 +629,17 @@ export interface SimpleRpcaSummary {
   excluded_empty_meters: string[];
   imputed_value_count: number;
   overage_window_count: number;
-  converged: boolean;
-  iterations: number;
-  final_delta: number;
 }
 
 export interface SimpleRpcaResponse {
+  interactive_data?: {
+    timestamps: string[];
+    buildings: string[];
+    deviations: number[][];
+    actual: number[];
+    usual: number[];
+    campus_total: (number | null)[];
+  };
   warnings?: string[];
   success: boolean;
   meter: string;
