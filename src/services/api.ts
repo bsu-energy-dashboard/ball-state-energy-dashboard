@@ -639,43 +639,7 @@ export const useSimpleRpca = (
     queryFn: async () => {
       if (!request) throw new Error("No request provided");
 
-      const body: Record<string, unknown> = {
-        start_date: request.start_date,
-        end_date: request.end_date,
-        meter: request.meter || undefined,
-        total_meters: request.total_meters?.length ? request.total_meters : undefined,
-        threshold: request.threshold ?? 22000,
-      };
-
-      if (request.overage_windows?.length) {
-        body.overage_windows = request.overage_windows;
-      }
-      body.cleaning_method = request.cleaning_method && request.cleaning_method !== "None" ? request.cleaning_method : null;
-      if (request.cleaning_window !== undefined) {
-        body.cleaning_window = request.cleaning_window;
-      }
-      if (request.cleaning_n_sigma !== undefined) {
-        body.cleaning_n_sigma = request.cleaning_n_sigma;
-      }
-      if (request.cleaning_interval_width !== undefined) {
-        body.cleaning_interval_width = request.cleaning_interval_width;
-      }
-      if (request.cleaning_daily !== undefined) {
-        body.cleaning_daily = request.cleaning_daily;
-      }
-      if (request.cleaning_weekly !== undefined) {
-        body.cleaning_weekly = request.cleaning_weekly;
-      }
-      if (request.cleaning_imputem !== undefined) {
-        body.cleaning_imputem = request.cleaning_imputem;
-      }
-      if (request.cleaning_max !== undefined) body.cleaning_max = request.cleaning_max;
-      if (request.cleaning_min !== undefined) body.cleaning_min = request.cleaning_min;
-      if (request.cleaning_order !== undefined) {
-        body.cleaning_order = request.cleaning_order;
-      }
-
-      appendManualOutliersToBody(body, request);
+      const body = { saved_year: request.saved_year, start_date: request.start_date };
 
       const response = await axios.post<SimpleRpcaResponse>(
         `${API_URL}/rpca/simple`,

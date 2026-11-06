@@ -114,3 +114,16 @@ test('zap selection uses an automatic-only baseline and raw data when cleaning i
  const {outlierPreviewQueryKey} = load('src/utils/analysisQueryKeys.ts');
  assert.equal(samePreviewSource(outlierPreviewQueryKey(baseline),outlierPreviewQueryKey({...baseline,cleaning_method:'Polynomial'})),false);
 });
+const { campusWeekRequest, campusWeekBounds } = load('src/utils/campusWeek.ts');
+test('Campus overview requests exactly seven local days from a selected saved year', () => {
+ const request = campusWeekRequest(2025,'2025-08-01');
+ assert.equal(request.end_date,'2025-08-07T23:00:00');
+ assert.equal(request.saved_year,2025);
+ assert.equal(request.cleaning_method,undefined);
+ assert.equal(request.manual_outliers,undefined);
+ assert.throws(()=>campusWeekRequest(2026,'2026-08-01'));
+ assert.throws(()=>campusWeekRequest(2022,'2022-07-19'));
+ assert.throws(()=>campusWeekRequest(2025,'2026-07-14'));
+ assert.equal(campusWeekBounds(2025).max,'2026-07-13');
+ assert.equal(campusWeekRequest(2023,'2024-02-26').end_date,'2024-03-03T23:00:00');
+});
